@@ -1,0 +1,11 @@
+First Name,Last Name,Email,Company,Title,Phone,LinkedIn,Badge Scan Time,Booth Location,Notes
+Alex,Turner,alex.turner@techcorp.com,TechCorp Solutions,CTO,555-0301,linkedin.com/in/alexturner,2025-11-10 14:00:00,Booth A1,Initial scan
+Maria,Santos,maria.santos@datacenter.io,DataCenter Pro,Director,555-0302,linkedin.com/in/mariasantos,2025-11-10 14:15:00,Booth A1,Interested in pricing
+Alex,Turner,alex.turner@techcorp.com,TechCorp Solutions,CTO,555-0301,linkedin.com/in/alexturner,2025-11-10 15:30:00,Booth B3,Second scan - different booth
+Carlos,Mendez,carlos.mendez@cloudops.com,CloudOps Inc,VP of Engineering,555-0303,linkedin.com/in/carlosmendez,2025-11-10 14:30:00,Booth A2,Demo scheduled
+Maria,Santos,maria.santos@datacenter.io,DataCenter Pro,Director,555-0302,linkedin.com/in/mariasantos,2025-11-10 16:00:00,Booth C1,Returned with team
+Nina,Patel,nina.patel@aiventures.co,AI Ventures,CEO,555-0304,linkedin.com/in/ninapatel,2025-11-10 14:45:00,Booth A2,Very interested
+Carlos,Mendez,carlos.mendez@cloudops.com,CloudOps Inc,VP of Engineering,555-0303,linkedin.com/in/carlosmendez,2025-11-10 15:00:00,Booth A2,Still at same booth
+Nina,Patel,nina.patel@aiventures.co,AI Ventures,CEO,555-0304,linkedin.com/in/ninapatel,2025-11-10 16:30:00,Booth D2,Third scan
+Lucas,Kim,lucas.kim@platform.ai,Platform AI,Product Manager,555-0305,linkedin.com/in/lucaskim,2025-11-10 15:15:00,Booth B1,First time visitor
+Alex,Turner,alex.turner@techcorp.com,TechCorp Solutions,Chief Technology Officer,555-0301,linkedin.com/in/alexturner,2025-11-10 17:00:00,Booth E1,Third scan - updated title

@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(pwsh:*)",
+      "Bash(powershell -File:*)",
+      "Bash(powershell:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest add button card table badge dropdown-menu dialog tabs input label select form alert toast progress)",
+      "Bash(npx shadcn@latest add button card table badge dropdown-menu dialog tabs input label select form alert sonner progress)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(ping:*)",
+      "Bash(nul)",
+      "Bash(taskkill:*)",
+      "Bash(if exist \"C:\\Users\\User\\Projects\\Trade-Show\\.next\\dev\\lock\" del \"C:\\Users\\User\\Projects\\Trade-Show\\.next\\dev\\lock\")",
+      "Bash(npx tsx:*)",
+      "Bash(if exist \".next\\dev\\lock\" del \".next\\dev\\lock\")",
+      "Bash(if exist \".next\" rmdir /s /q \".next\")",
+      "Bash(git rev-parse:*)",
+      "Bash(npm run lint:*)",
+      "Bash(test:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c restart-server.bat)",
+      "Bash(if not exist \"lib\\scoring\" mkdir \"lib\\scoring\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nImplement batch enrichment, scoring logic, and dashboard workflow (T043-T053)\n\nAdd comprehensive batch enrichment system with real-time progress tracking, persona-based scoring, and integrated dashboard workflow for trade show intelligence platform.\n\nKey Features:\n- Batch enrichment job queue with in-memory tracking (T043)\n- Batch enrichment API with 10-company parallel processing (T044)\n- Server-Sent Events (SSE) for real-time progress updates (T046)\n- Status polling API for job monitoring (T045)\n- Real-time progress indicator component (T047)\n- Tier calculation logic with fit score thresholds (T048)\n- Persona fit score calculation with weighted criteria (T049)\n- Persona match persistence in storage adapter (T050)\n- Complete dashboard workflow with 5 steps (T051-T053)\n\nImplementation Details:\n- lib/enrichment/batch-queue.ts: In-memory job tracking with auto-cleanup\n- app/api/enrichment/batch/route.ts: POST endpoint for batch jobs, GET endpoint for SSE streaming\n- app/api/enrichment/status/[jobId]/route.ts: Job status polling and deletion\n- components/dashboard/enrichment-progress.tsx: Real-time progress UI with SSE\n- lib/scoring/tier-calculator.ts: Hot/Warm/Cold/Unscored tier logic\n- lib/scoring/persona-matcher.ts: 7-criteria weighted scoring algorithm\n- app/dashboard/page.tsx: Event setup → Upload → Mapping → Enrichment → Complete workflow\n\nTechnical Highlights:\n- Parallel batch processing (10 companies concurrently)\n- Real-time SSE streaming with 500ms polling interval\n- 3-part error messaging (what failed, how to fix, example format)\n- Data coverage validation (minimum 30% required for scoring)\n- Storage adapter integration for persistence\n- Constitution compliance (hub-and-spoke pattern, pluggable storage)\n\nAll tasks validated against specification requirements and data model definitions. Dashboard now provides complete end-to-end workflow from CSV upload through enrichment to tier-categorized reports.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nImplement batch enrichment, scoring logic, and dashboard workflow (T043-T053)\n\nAdd comprehensive batch enrichment system with real-time progress tracking, persona-based scoring, and integrated dashboard workflow for trade show intelligence platform.\n\nKey Features:\n- Batch enrichment job queue with in-memory tracking (T043)\n- Batch enrichment API with 10-company parallel processing (T044)\n- Server-Sent Events (SSE) for real-time progress updates (T046)\n- Status polling API for job monitoring (T045)\n- Real-time progress indicator component (T047)\n- Tier calculation logic with fit score thresholds (T048)\n- Persona fit score calculation with weighted criteria (T049)\n- Persona match persistence in storage adapter (T050)\n- Complete dashboard workflow with 5 steps (T051-T053)\n\nImplementation Details:\n- lib/enrichment/batch-queue.ts: In-memory job tracking with auto-cleanup\n- app/api/enrichment/batch/route.ts: POST endpoint for batch jobs, GET endpoint for SSE streaming\n- app/api/enrichment/status/[jobId]/route.ts: Job status polling and deletion\n- components/dashboard/enrichment-progress.tsx: Real-time progress UI with SSE\n- lib/scoring/tier-calculator.ts: Hot/Warm/Cold/Unscored tier logic\n- lib/scoring/persona-matcher.ts: 7-criteria weighted scoring algorithm\n- app/dashboard/page.tsx: Event setup to Upload to Mapping to Enrichment to Complete workflow\n\nTechnical Highlights:\n- Parallel batch processing (10 companies concurrently)\n- Real-time SSE streaming with 500ms polling interval\n- 3-part error messaging (what failed, how to fix, example format)\n- Data coverage validation (minimum 30% required for scoring)\n- Storage adapter integration for persistence\n- Constitution compliance (hub-and-spoke pattern, pluggable storage)\n\nAll tasks validated against specification requirements and data model definitions. Dashboard now provides complete end-to-end workflow from CSV upload through enrichment to tier-categorized reports.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(.gitignore)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

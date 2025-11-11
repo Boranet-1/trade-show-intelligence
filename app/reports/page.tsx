@@ -1,0 +1,257 @@
+'use client'
+
+/**
+ * Reports Page
+ *
+ * Display all generated reports with filtering and tier badges
+ */
+
+import { useState, useEffect } from 'react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ExportButton } from '@/components/ui/export-button'
+import Link from 'next/link'
+
+interface ReportSummary {
+  id: string
+  eventId: string
+  name: string
+  generatedAt: string
+  totalScans: number
+  hotCount: number
+  warmCount: number
+  coldCount: number
+  unscoredCount: number
+}
+
+// Mock data for initial testing
+const mockReports: ReportSummary[] = [
+  {
+    id: '1',
+    eventId: 'ces-2025',
+    name: 'CES 2025 Report',
+    generatedAt: new Date().toISOString(),
+    totalScans: 150,
+    hotCount: 25,
+    warmCount: 60,
+    coldCount: 50,
+    unscoredCount: 15,
+  },
+  {
+    id: '2',
+    eventId: 'dreamforce-2024',
+    name: 'Dreamforce 2024 Report',
+    generatedAt: new Date(Date.now() - 86400000).toISOString(),
+    totalScans: 200,
+    hotCount: 40,
+    warmCount: 80,
+    coldCount: 60,
+    unscoredCount: 20,
+  },
+]
+
+export default function ReportsPage() {
+  const [reports, setReports] = useState<ReportSummary[]>(mockReports)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    fetchReports()
+  }, [])
+
+  const fetchReports = async () => {
+    setIsLoading(true)
+    try {
+      // Try to fetch real reports from API
+      const response = await fetch('/api/reports')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data.length > 0) {
+          setReports(result.data)
+        }
+      }
+    } catch {
+      // Fall back to mock data if API not ready
+      console.log('Using mock data for reports')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="text-center">Loading reports...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Reports</h1>
+            <p className="text-slate-600">View all generated trade show intelligence reports</p>
+          </div>
+          <Link href="/dashboard">
+            <Button>Back to Dashboard</Button>
+          </Link>
+        </div>
+      </div>
+
+      {reports.length === 0 ? (
+        <Card className="p-12 text-center">
+          <p className="text-slate-600 mb-4">No reports generated yet</p>
+          <Link href="/dashboard">
+            <Button>Upload Badge Scans</Button>
+          </Link>
+        </Card>
+      ) : (
+        <Card className="p-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Event</TableHead>
+                <TableHead>Generated</TableHead>
+                <TableHead>Total Scans</TableHead>
+                <TableHead>Hot</TableHead>
+                <TableHead>Warm</TableHead>
+                <TableHead>Cold</TableHead>
+                <TableHead>Unscored</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reports.map((report) => (
+                <TableRow key={report.id}>
+                  <TableCell className="font-medium">{report.name}</TableCell>
+                  <TableCell>{formatDate(report.generatedAt)}</TableCell>
+                  <TableCell>{report.totalScans}</TableCell>
+                  <TableCell>
+                    <Badge variant="destructive">{report.hotCount}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="default">{report.warmCount}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{report.coldCount}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{report.unscoredCount}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                      <ExportButton
+                        type="report"
+                        reportId={report.id}
+                        size="sm"
+                        label="Export CSV"
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {/* Export by Tier */}
+      {reports.length > 0 && (
+        <Card className="p-6 mt-6">
+          <h3 className="font-semibold mb-2">Export Leads by Tier</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Download CSV files filtered by lead tier for targeted outreach
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <ExportButton
+              type="leads-by-tier"
+              eventId={reports[0].eventId}
+              tier="Hot"
+              label="Export Hot Leads"
+              variant="destructive"
+              size="default"
+              className="w-full"
+            />
+            <ExportButton
+              type="leads-by-tier"
+              eventId={reports[0].eventId}
+              tier="Warm"
+              label="Export Warm Leads"
+              variant="default"
+              size="default"
+              className="w-full"
+            />
+            <ExportButton
+              type="leads-by-tier"
+              eventId={reports[0].eventId}
+              tier="Cold"
+              label="Export Cold Leads"
+              variant="secondary"
+              size="default"
+              className="w-full"
+            />
+            <ExportButton
+              type="leads-by-tier"
+              eventId={reports[0].eventId}
+              tier="Unscored"
+              label="Export Unscored"
+              variant="outline"
+              size="default"
+              className="w-full"
+            />
+          </div>
+          <p className="text-xs text-slate-500 mt-3">
+            Import these CSV files into Google Sheets to share with your sales team
+          </p>
+        </Card>
+      )}
+
+      {/* Legend */}
+      <Card className="p-4 mt-6">
+        <h3 className="font-semibold mb-3">Tier Legend</h3>
+        <div className="flex gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Badge variant="destructive">Hot</Badge>
+            <span className="text-sm text-slate-600">Tier 1 - High priority leads</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="default">Warm</Badge>
+            <span className="text-sm text-slate-600">Tier 2 - Medium priority leads</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">Cold</Badge>
+            <span className="text-sm text-slate-600">Tier 3 - Low priority leads</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">Unscored</Badge>
+            <span className="text-sm text-slate-600">Tier 4 - Not yet scored</span>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
