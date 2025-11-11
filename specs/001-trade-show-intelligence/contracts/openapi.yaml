@@ -1,0 +1,1231 @@
+openapi: 3.0.3
+info:
+  title: Trade Show Intelligence Platform API
+  description: |
+    REST API for badge scan upload, enrichment processing, persona management, and report generation.
+
+    **Key Features**:
+    - CSV badge scan upload and processing
+    - Batch enrichment with multi-LLM verification
+    - Persona-based lead scoring and tier assignment
+    - Report generation with filtering and export
+    - Storage adapter configuration (Local, MySQL, HubSpot)
+  version: 1.0.0
+  contact:
+    name: Trade Show Intelligence Platform
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://app.tradeshowai.com/api
+    description: Production server
+
+tags:
+  - name: Upload
+    description: CSV file upload operations
+  - name: Enrichment
+    description: Batch enrichment processing and status
+  - name: Reports
+    description: Report generation, retrieval, and export
+  - name: Personas
+    description: Persona template management
+  - name: Settings
+    description: Storage adapter configuration
+  - name: Events
+    description: Trade show event management
+
+paths:
+  /upload:
+    post:
+      summary: Upload CSV badge scan file
+      description: |
+        Accepts CSV file with badge scan data, performs intelligent column mapping,
+        and creates badge scan records. Returns mapping preview if ambiguous columns detected.
+      tags:
+        - Upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - eventId
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file with badge scan data
+                eventId:
+                  type: string
+                  description: Event identifier to associate scans with
+                columnMappings:
+                  type: object
+                  description: Optional manual column mappings (if preview step completed)
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/UploadSuccess'
+                  - $ref: '#/components/schemas/MappingPreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: File too large (max 10MB)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /enrichment/batch:
+    post:
+      summary: Start batch enrichment processing
+      description: |
+        Initiates batch enrichment for badge scans. Processes enrichments in parallel
+        using multi-LLM consensus (Claude, GPT-4, Gemini, Perplexity). Returns job ID
+        for status polling.
+      tags:
+        - Enrichment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - badgeScanIds
+              properties:
+                badgeScanIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Badge scan IDs to enrich
+                personaIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Personas to score against (defaults to all active personas)
+      responses:
+        '202':
+          description: Batch enrichment job started
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - jobId
+                  - status
+                  - totalScans
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending, processing]
+                  totalScans:
+                    type: integer
+                  estimatedCompletionTime:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /enrichment/status/{jobId}:
+    get:
+      summary: Get enrichment job status
+      description: Poll enrichment job status and progress
+      tags:
+        - Enrichment
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichmentJobStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports:
+    get:
+      summary: List all reports
+      description: Retrieve all reports, optionally filtered by event
+      tags:
+        - Reports
+      parameters:
+        - name: eventId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter reports by event ID
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - reports
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReportSummary'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Generate new report
+      description: |
+        Generate report from enriched badge scans with optional filtering.
+        Returns report immediately for small datasets (<100 scans) or job ID for larger datasets.
+      tags:
+        - Reports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - name
+              properties:
+                eventId:
+                  type: string
+                name:
+                  type: string
+                  maxLength: 200
+                filters:
+                  $ref: '#/components/schemas/ReportFilters'
+      responses:
+        '200':
+          description: Report generated successfully (small dataset)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '202':
+          description: Report generation job started (large dataset)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - jobId
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports/{reportId}:
+    get:
+      summary: Get report by ID
+      description: Retrieve full report with enriched badge scan data
+      tags:
+        - Reports
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete report
+      description: Delete report by ID
+      tags:
+        - Reports
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Report deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /reports/{reportId}/export:
+    post:
+      summary: Export report
+      description: Export report in CSV or PDF format
+      tags:
+        - Reports
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - format
+              properties:
+                format:
+                  type: string
+                  enum: [csv, pdf]
+      responses:
+        '200':
+          description: Report exported successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /personas:
+    get:
+      summary: List all personas
+      description: Retrieve all persona templates
+      tags:
+        - Personas
+      parameters:
+        - name: defaultOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Return only default personas
+      responses:
+        '200':
+          description: Personas retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - personas
+                properties:
+                  personas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Persona'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Create new persona
+      description: Create custom persona template
+      tags:
+        - Personas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaInput'
+      responses:
+        '201':
+          description: Persona created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /personas/{personaId}:
+    get:
+      summary: Get persona by ID
+      description: Retrieve persona template details
+      tags:
+        - Personas
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Persona retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: Update persona
+      description: Update existing persona template
+      tags:
+        - Personas
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaInput'
+      responses:
+        '200':
+          description: Persona updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: Delete persona
+      description: Delete persona template
+      tags:
+        - Personas
+      parameters:
+        - name: personaId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Persona deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cannot delete persona (in use by reports)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /settings/storage:
+    get:
+      summary: Get active storage configuration
+      description: Retrieve current storage adapter configuration
+      tags:
+        - Settings
+      responses:
+        '200':
+          description: Storage configuration retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageConfiguration'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Update storage configuration
+      description: |
+        Update storage adapter configuration. System will attempt migration
+        from current adapter to new adapter if data exists.
+      tags:
+        - Settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageConfigurationInput'
+      responses:
+        '200':
+          description: Storage configuration updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - migrationStatus
+                properties:
+                  success:
+                    type: boolean
+                  migrationStatus:
+                    type: string
+                    enum: [none, completed, failed]
+                  migratedRecords:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /settings/storage/test:
+    post:
+      summary: Test storage connection
+      description: Test connection to storage adapter before saving configuration
+      tags:
+        - Settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorageConfigurationInput'
+      responses:
+        '200':
+          description: Connection test successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /events:
+    get:
+      summary: List all events
+      description: Retrieve all trade show events
+      tags:
+        - Events
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - events
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Create new event
+      description: Create trade show event record
+      tags:
+        - Events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    UploadSuccess:
+      type: object
+      required:
+        - success
+        - badgeScanIds
+        - totalImported
+      properties:
+        success:
+          type: boolean
+        badgeScanIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        totalImported:
+          type: integer
+        eventId:
+          type: string
+
+    MappingPreview:
+      type: object
+      required:
+        - requiresMapping
+        - detectedMappings
+        - sampleData
+      properties:
+        requiresMapping:
+          type: boolean
+        detectedMappings:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              suggestedField:
+                type: string
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 100
+        sampleData:
+          type: array
+          items:
+            type: object
+          maxItems: 5
+
+    EnrichmentJobStatus:
+      type: object
+      required:
+        - jobId
+        - status
+        - totalScans
+        - processedScans
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        totalScans:
+          type: integer
+        processedScans:
+          type: integer
+        successfulEnrichments:
+          type: integer
+        failedEnrichments:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              badgeScanId:
+                type: string
+                format: uuid
+              error:
+                type: string
+
+    Report:
+      type: object
+      required:
+        - id
+        - eventId
+        - name
+        - generatedAt
+        - badgeScans
+        - statistics
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+        name:
+          type: string
+        filters:
+          $ref: '#/components/schemas/ReportFilters'
+        generatedAt:
+          type: string
+          format: date-time
+        badgeScans:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrichedBadgeScan'
+        statistics:
+          $ref: '#/components/schemas/ReportStatistics'
+
+    ReportSummary:
+      type: object
+      required:
+        - id
+        - eventId
+        - name
+        - generatedAt
+        - statistics
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+        name:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        statistics:
+          $ref: '#/components/schemas/ReportStatistics'
+
+    ReportFilters:
+      type: object
+      properties:
+        tiers:
+          type: array
+          items:
+            type: string
+            enum: [Hot, Warm, Cold, Unscored]
+        industries:
+          type: array
+          items:
+            type: string
+        employeeRanges:
+          type: array
+          items:
+            type: string
+        revenueRanges:
+          type: array
+          items:
+            type: string
+        technologies:
+          type: array
+          items:
+            type: string
+        personas:
+          type: array
+          items:
+            type: string
+            format: uuid
+        searchQuery:
+          type: string
+
+    ReportStatistics:
+      type: object
+      required:
+        - totalScans
+        - enrichedCount
+        - hotCount
+        - warmCount
+        - coldCount
+        - unscoredCount
+      properties:
+        totalScans:
+          type: integer
+        enrichedCount:
+          type: integer
+        hotCount:
+          type: integer
+        warmCount:
+          type: integer
+        coldCount:
+          type: integer
+        unscoredCount:
+          type: integer
+        topIndustries:
+          type: array
+          items:
+            type: object
+            properties:
+              industry:
+                type: string
+              count:
+                type: integer
+        averageFitScore:
+          type: number
+        enrichmentSuccessRate:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    EnrichedBadgeScan:
+      type: object
+      required:
+        - id
+        - eventId
+        - company
+        - tier
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+        scannedAt:
+          type: string
+          format: date-time
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        company:
+          type: string
+        jobTitle:
+          type: string
+        phone:
+          type: string
+        tier:
+          type: string
+          enum: [Hot, Warm, Cold, Unscored]
+        fitScore:
+          type: number
+          minimum: 0
+          maximum: 100
+        enrichedCompany:
+          $ref: '#/components/schemas/EnrichedCompany'
+        personaMatches:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonaMatch'
+
+    EnrichedCompany:
+      type: object
+      properties:
+        companyName:
+          type: string
+        domain:
+          type: string
+        employeeCount:
+          type: integer
+        employeeRange:
+          type: string
+        industry:
+          type: string
+        industryCodes:
+          type: array
+          items:
+            type: string
+        annualRevenue:
+          type: number
+        revenueRange:
+          type: string
+        techStack:
+          type: array
+          items:
+            type: string
+        fundingStage:
+          type: string
+        totalFunding:
+          type: number
+        headquarters:
+          type: string
+        founded:
+          type: integer
+        description:
+          type: string
+        linkedinUrl:
+          type: string
+        twitterHandle:
+          type: string
+        enrichedAt:
+          type: string
+          format: date-time
+
+    PersonaMatch:
+      type: object
+      required:
+        - personaId
+        - personaName
+        - fitScore
+        - tier
+      properties:
+        personaId:
+          type: string
+          format: uuid
+        personaName:
+          type: string
+        fitScore:
+          type: number
+          minimum: 0
+          maximum: 100
+        tier:
+          type: string
+          enum: [Hot, Warm, Cold, Unscored]
+        actionableInsights:
+          type: array
+          items:
+            type: string
+
+    Persona:
+      type: object
+      required:
+        - id
+        - name
+        - isDefault
+        - criteria
+        - weights
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        isDefault:
+          type: boolean
+        criteria:
+          $ref: '#/components/schemas/PersonaCriteria'
+        weights:
+          $ref: '#/components/schemas/PersonaWeights'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+
+    PersonaInput:
+      type: object
+      required:
+        - name
+        - criteria
+        - weights
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        isDefault:
+          type: boolean
+        criteria:
+          $ref: '#/components/schemas/PersonaCriteria'
+        weights:
+          $ref: '#/components/schemas/PersonaWeights'
+
+    PersonaCriteria:
+      type: object
+      properties:
+        companySizeRange:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        industries:
+          type: array
+          items:
+            type: string
+        technologies:
+          type: array
+          items:
+            type: string
+        revenueRange:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+        geographies:
+          type: array
+          items:
+            type: string
+        decisionMakerTitles:
+          type: array
+          items:
+            type: string
+        fundingStages:
+          type: array
+          items:
+            type: string
+
+    PersonaWeights:
+      type: object
+      required:
+        - companySize
+        - industry
+        - technology
+        - revenue
+        - geography
+        - decisionMaker
+        - fundingStage
+      properties:
+        companySize:
+          type: number
+          minimum: 0
+          maximum: 1
+        industry:
+          type: number
+          minimum: 0
+          maximum: 1
+        technology:
+          type: number
+          minimum: 0
+          maximum: 1
+        revenue:
+          type: number
+          minimum: 0
+          maximum: 1
+        geography:
+          type: number
+          minimum: 0
+          maximum: 1
+        decisionMaker:
+          type: number
+          minimum: 0
+          maximum: 1
+        fundingStage:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    StorageConfiguration:
+      type: object
+      required:
+        - id
+        - adapterType
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        adapterType:
+          type: string
+          enum: [LOCAL, MYSQL, HUBSPOT]
+        localStorageConfig:
+          type: object
+          properties:
+            dataDirectory:
+              type: string
+        mysqlConfig:
+          type: object
+          properties:
+            host:
+              type: string
+            port:
+              type: integer
+            database:
+              type: string
+            username:
+              type: string
+            connectionPoolSize:
+              type: integer
+        hubspotConfig:
+          type: object
+          properties:
+            portalId:
+              type: string
+            customPropertyPrefix:
+              type: string
+        isActive:
+          type: boolean
+        lastTestedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StorageConfigurationInput:
+      type: object
+      required:
+        - adapterType
+      properties:
+        adapterType:
+          type: string
+          enum: [LOCAL, MYSQL, HUBSPOT]
+        localStorageConfig:
+          type: object
+          properties:
+            dataDirectory:
+              type: string
+        mysqlConfig:
+          type: object
+          required:
+            - host
+            - port
+            - database
+            - username
+            - password
+          properties:
+            host:
+              type: string
+            port:
+              type: integer
+            database:
+              type: string
+            username:
+              type: string
+            password:
+              type: string
+            connectionPoolSize:
+              type: integer
+        hubspotConfig:
+          type: object
+          required:
+            - apiKey
+            - portalId
+          properties:
+            apiKey:
+              type: string
+            portalId:
+              type: string
+            customPropertyPrefix:
+              type: string
+
+    Event:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        location:
+          type: string
+        boothNumber:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    EventInput:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        location:
+          type: string
+          maxLength: 200
+        boothNumber:
+          type: string
+          maxLength: 50
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request (validation error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (future implementation)
+
+security: []

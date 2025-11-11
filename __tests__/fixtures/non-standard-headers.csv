@@ -1,0 +1,11 @@
+fname,lname,email_address,organization,job_title,cell_phone,social_media,timestamp,location,comments
+Jack,Peterson,jack.p@innovate.io,Innovate Systems,Director,555-0201,linkedin.com/in/jackpeterson,2025-11-10 09:00:00,Zone A,Looking for scalable solutions
+Susan,Morris,susan.morris@datatech.com,DataTech Corp,Manager,555-0202,linkedin.com/in/susanmorris,2025-11-10 09:15:00,Zone A,Budget discussion needed
+Frank,Rogers,f.rogers@cloudscale.io,CloudScale Inc,Lead,555-0203,linkedin.com/in/frankrogers,2025-11-10 09:30:00,Zone B,Demo requested
+Alice,Cook,alice.cook@ai solutions.ai,AISolutions Ltd,Executive,555-0204,linkedin.com/in/alicecook,2025-11-10 09:45:00,Zone B,Follow up next week
+Tom,Morgan,tom.m@security.tech,Security Tech,Consultant,555-0205,linkedin.com/in/tommorgan,2025-11-10 10:00:00,Zone C,Technical requirements
+Paula,Bell,paula.bell@analytics.co,Analytics Corp,Specialist,555-0206,linkedin.com/in/paulabell,2025-11-10 10:15:00,Zone C,Proof of concept phase
+Victor,Murphy,victor.murphy@enterprise.net,Enterprise Networks,Architect,555-0207,linkedin.com/in/victormurphy,2025-11-10 10:30:00,Zone D,Integration concerns
+Diana,Bailey,diana.b@platform.io,Platform Technologies,Developer,555-0208,linkedin.com/in/dianabailey,2025-11-10 10:45:00,Zone D,API documentation requested
+Oliver,Rivera,oliver.rivera@systems.ai,Systems AI,VP,555-0209,linkedin.com/in/oliverrivera,2025-11-10 11:00:00,Zone E,Hot lead - high priority
+Grace,Cooper,grace.cooper@data.io,Data Innovations,Director,555-0210,linkedin.com/in/gracecooper,2025-11-10 11:15:00,Zone E,Evaluating competitors
