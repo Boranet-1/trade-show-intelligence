@@ -1,0 +1,73 @@
+{
+  "id": "00000000-0000-0000-0000-000000000002",
+  "name": "SMB SaaS Growth Company",
+  "description": "Small to mid-size SaaS companies in growth phase looking for solutions to scale their operations",
+  "isDefault": true,
+  "criteria": {
+    "companySizeRange": {
+      "min": 10,
+      "max": 500
+    },
+    "industries": [
+      "SaaS",
+      "Software",
+      "Technology",
+      "Cloud Computing",
+      "B2B Software",
+      "Fintech",
+      "Healthcare Tech",
+      "Edtech"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "Python",
+      "AWS",
+      "Docker",
+      "Kubernetes",
+      "PostgreSQL",
+      "MongoDB",
+      "Stripe",
+      "HubSpot"
+    ],
+    "revenueRange": {
+      "min": 1000000,
+      "max": 100000000
+    },
+    "geographies": [
+      "United States",
+      "Canada",
+      "United Kingdom",
+      "Australia",
+      "Ireland"
+    ],
+    "decisionMakerTitles": [
+      "CEO",
+      "CTO",
+      "Co-Founder",
+      "VP Engineering",
+      "VP Product",
+      "Head of Engineering",
+      "Engineering Manager",
+      "Technical Lead"
+    ],
+    "fundingStages": [
+      "Seed",
+      "Series A",
+      "Series B",
+      "Series C+"
+    ]
+  },
+  "weights": {
+    "companySize": 0.20,
+    "industry": 0.25,
+    "technology": 0.25,
+    "revenue": 0.10,
+    "geography": 0.05,
+    "decisionMaker": 0.10,
+    "fundingStage": 0.05
+  },
+  "createdAt": "2025-11-09T00:00:00.000Z",
+  "updatedAt": "2025-11-09T00:00:00.000Z",
+  "createdBy": "SYSTEM"
+}
