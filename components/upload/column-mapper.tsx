@@ -71,7 +71,7 @@ export function ColumnMapper({
   onCancel,
 }: ColumnMapperProps) {
   // Initialize mappings state
-  const [mappings, setMappings] = useState<ColumnMapping[]>(detectedMappings)
+  const [mappings, setMappings] = useState<ColumnMapping[]>(detectedMappings || [])
 
   // Handle mapping change
   const handleMappingChange = useCallback((csvColumn: string, newTargetField: string) => {

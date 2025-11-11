@@ -1,0 +1,41 @@
+First Name,Last Name,Email,Company,Title,Phone,LinkedIn,Badge Scan Time,Booth Location,Notes
+Alice,Chen,alice.chen@techstartup.io,TechStartup Inc,Founder & CEO,555-0201,linkedin.com/in/alicechen,2025-11-11 09:15:00,Booth A3,Very interested in automation features
+Marcus,Thompson,m.thompson@enterprise.com,Enterprise Solutions Ltd,VP of Technology,555-0202,linkedin.com/in/marcusthompson,2025-11-11 09:30:00,Booth A3,Looking for scalable solutions
+Sofia,Rodriguez,sofia.r@innovate.ai,InnovateAI Systems,Chief Data Officer,555-0203,linkedin.com/in/sofiarodriguez,2025-11-11 09:45:00,Booth A3,Budget allocated for Q1 2025
+James,Patterson,james.patterson@dataflow.com,DataFlow Corp,Director of Engineering,555-0204,linkedin.com/in/jamespatterson,2025-11-11 10:00:00,Booth B1,Requested technical whitepaper
+Emma,Williams,emma.w@cloudscale.io,CloudScale Technologies,Head of Product,555-0205,linkedin.com/in/emmawilliams,2025-11-11 10:15:00,Booth B1,Wants to schedule demo
+Oliver,Martinez,oliver.martinez@securedata.com,SecureData Inc,Security Architect,555-0206,linkedin.com/in/olivermartinez,2025-11-11 10:30:00,Booth B1,Compliance and security focus
+Isabella,Kim,isabella.kim@analytics.pro,Analytics Pro,VP of Operations,555-0207,linkedin.com/in/isabellakim,2025-11-11 10:45:00,Booth B2,Comparing with competitors
+Lucas,Anderson,lucas.a@startuplab.io,StartupLab Ventures,CTO,555-0208,linkedin.com/in/lucasanderson,2025-11-11 11:00:00,Booth B2,Early stage evaluation
+Mia,Taylor,mia.taylor@devops.tech,DevOps Tech,Engineering Manager,555-0209,linkedin.com/in/miataylor,2025-11-11 11:15:00,Booth B2,Integration requirements
+Benjamin,Lee,ben.lee@aiplatform.io,AI Platform Solutions,Product Manager,555-0210,linkedin.com/in/benjaminlee,2025-11-11 11:30:00,Booth C1,Hot lead - follow up today
+Charlotte,Davis,charlotte.davis@fintech.ai,FinTech AI Group,Chief Product Officer,555-0211,linkedin.com/in/charlottedavis,2025-11-11 11:45:00,Booth C1,Regulatory compliance questions
+Henry,Nguyen,henry.nguyen@retail.tech,RetailTech Inc,VP of Analytics,555-0212,linkedin.com/in/henrynguyen,2025-11-11 12:00:00,Booth C1,Seasonal analytics needs
+Amelia,Brown,amelia.brown@logistics.ai,Logistics AI Corp,Director of Innovation,555-0213,linkedin.com/in/ameliabrown,2025-11-11 12:15:00,Booth C2,Supply chain optimization
+Elijah,Wilson,elijah.w@manufacturing.io,Manufacturing IoT,Head of Digital,555-0214,linkedin.com/in/elijahwilson,2025-11-11 12:30:00,Booth C2,IoT integration project
+Harper,Garcia,harper.garcia@consulting.co,Consulting Partners,Senior Consultant,555-0215,linkedin.com/in/harpergarcia,2025-11-11 12:45:00,Booth C2,Client evaluation in progress
+Alexander,Moore,alex.moore@media.tech,MediaTech Platform,VP of Engineering,555-0216,linkedin.com/in/alexandermoore,2025-11-11 13:00:00,Booth D1,Real-time processing needs
+Evelyn,Jackson,evelyn.jackson@healthtech.io,HealthTech Solutions,Chief Technology Officer,555-0217,linkedin.com/in/evelynjackson,2025-11-11 13:15:00,Booth D1,HIPAA compliance required
+Sebastian,White,sebastian.white@gaming.ai,Gaming AI Corp,Product Director,555-0218,linkedin.com/in/sebastianwhite,2025-11-11 13:30:00,Booth D1,Low latency requirements
+Aria,Harris,aria.harris@telecom.tech,Telecom Innovations,Chief Data Officer,555-0219,linkedin.com/in/ariaharris,2025-11-11 13:45:00,Booth D2,Network analytics project
+Jack,Martin,jack.martin@automotive.ai,Automotive AI Labs,Director of R&D,555-0220,linkedin.com/in/jackmartin,2025-11-11 14:00:00,Booth D2,Autonomous systems focus
+Scarlett,Thompson,scarlett.t@aerospace.tech,Aerospace Technologies,Senior Engineer,555-0221,linkedin.com/in/scarlettthompson,2025-11-11 14:15:00,Booth D2,Safety-critical applications
+Daniel,Garcia,daniel.garcia@energy.io,Energy AI Solutions,VP of Operations,555-0222,linkedin.com/in/danielgarcia,2025-11-11 14:30:00,Booth E1,Predictive maintenance interest
+Grace,Martinez,grace.martinez@insurance.tech,Insurance Tech Group,Chief Innovation Officer,555-0223,linkedin.com/in/gracemartinez,2025-11-11 14:45:00,Booth E1,Risk assessment models
+Matthew,Robinson,matt.robinson@realestate.ai,RealEstate AI,CEO,555-0224,linkedin.com/in/matthewrobinson,2025-11-11 15:00:00,Booth E1,Property valuation ML
+Chloe,Clark,chloe.clark@education.tech,EdTech Solutions,Product Manager,555-0225,linkedin.com/in/cloeclark,2025-11-11 15:15:00,Booth E2,Personalized learning needs
+Samuel,Rodriguez,samuel.r@blockchain.io,Blockchain Solutions,Co-Founder,555-0226,linkedin.com/in/samuelrodriguez,2025-11-11 15:30:00,Booth E2,Decentralized platform interest
+Victoria,Lewis,victoria.lewis@cybersec.ai,CyberSec AI,Security Lead,555-0227,linkedin.com/in/victorialewis,2025-11-11 15:45:00,Booth E2,Threat detection use case
+David,Walker,david.walker@iot.tech,IoT Technologies,VP of Product,555-0228,linkedin.com/in/davidwalker,2025-11-11 16:00:00,Booth F1,Edge computing requirements
+Zoey,Hill,zoey.hill@quantum.ai,Quantum AI Labs,Research Director,555-0229,linkedin.com/in/zoeyhill,2025-11-11 16:15:00,Booth F1,Experimental AI research
+Joseph,Allen,joseph.allen@biotech.io,BioTech AI Inc,Chief Science Officer,555-0230,linkedin.com/in/josephallen,2025-11-11 16:30:00,Booth F1,Drug discovery platform
+Lily,Young,lily.young@agritech.ai,AgriTech AI,VP of Innovation,555-0231,linkedin.com/in/lilyyoung,2025-11-11 16:45:00,Booth F2,Precision agriculture tools
+Michael,King,michael.king@fashion.tech,Fashion Tech Group,CTO,555-0232,linkedin.com/in/michaelking,2025-11-11 17:00:00,Booth F2,Trend forecasting models
+Hannah,Wright,hannah.wright@hospitality.ai,Hospitality AI,Director of Digital,555-0233,linkedin.com/in/hannahwright,2025-11-11 17:15:00,Booth F2,Guest experience optimization
+Christopher,Lopez,chris.lopez@sports.tech,Sports Analytics Tech,Head of Analytics,555-0234,linkedin.com/in/christopherlopez,2025-11-11 17:30:00,Booth G1,Performance prediction models
+Lillian,Hill,lillian.hill@music.ai,Music AI Platform,Product Lead,555-0235,linkedin.com/in/lillianhill,2025-11-11 17:45:00,Booth G1,Recommendation engine needs
+Andrew,Scott,andrew.scott@food.tech,Food Tech Corp,VP of R&D,555-0236,linkedin.com/in/andrewscott,2025-11-11 18:00:00,Booth G1,Supply chain transparency
+Natalie,Green,natalie.green@chemical.ai,Chemical AI Industries,Chief Data Officer,555-0237,linkedin.com/in/nataliegreen,2025-11-11 18:15:00,Booth G2,Process optimization focus
+Ryan,Adams,ryan.adams@construction.tech,Construction Tech,Project Director,555-0238,linkedin.com/in/ryanadams,2025-11-11 18:30:00,Booth G2,Building automation interest
+Penelope,Baker,penelope.baker@architecture.ai,Architecture AI,Principal Architect,555-0239,linkedin.com/in/penelopebaker,2025-11-11 18:45:00,Booth G2,Design optimization tools
+Joshua,Nelson,joshua.nelson@ecommerce.io,ECommerce Solutions,VP of Engineering,555-0240,linkedin.com/in/joshuanelson,2025-11-11 19:00:00,Booth H1,Personalization engine needs

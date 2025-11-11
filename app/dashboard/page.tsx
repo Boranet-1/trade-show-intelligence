@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { CSVUploader, type CSVUploadResult } from '@/components/upload/csv-uploader'
-import { ColumnMapper, type ColumnMappingResult } from '@/components/upload/column-mapper'
+import { ColumnMapper } from '@/components/upload/column-mapper'
 import { EnrichmentProgress } from '@/components/dashboard/enrichment-progress'
 import { AlertCircle, CheckCircle2, Loader2, Upload, Settings, Users, FileText } from 'lucide-react'
 import Link from 'next/link'
@@ -279,8 +279,11 @@ export default function DashboardPage() {
               </Card>
 
               <ColumnMapper
-                uploadResult={uploadResult}
-                eventId={eventDetails.id}
+                headers={uploadResult?.headers || []}
+                sampleRows={uploadResult?.sampleRows || []}
+                detectedMappings={uploadResult?.detectedMappings || []}
+                unmappedColumns={uploadResult?.unmappedColumns || []}
+                confidence={uploadResult?.confidence || 'low'}
                 onConfirm={handleMappingConfirm}
                 onCancel={() => setCurrentStep('upload')}
               />
