@@ -46,7 +46,7 @@ export async function GET(
       data: persona,
     })
   } catch (error) {
-    logger.error('Failed to retrieve persona:', error)
+    logger.error('Failed to retrieve persona:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {
@@ -163,7 +163,7 @@ export async function DELETE(
       data: { message: 'Persona deleted successfully' },
     })
   } catch (error) {
-    logger.error('Failed to delete persona:', error)
+    logger.error('Failed to delete persona:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {

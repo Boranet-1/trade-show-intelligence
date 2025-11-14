@@ -8,6 +8,17 @@
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
+**Implementation Notes (2025-11-14)**:
+- Specification updated with MEDDIC framework (User Story 5) for deep-dive qualification analysis of Hot/Warm tier opportunities
+- Specification updated with dual-tier system (Company Tier + Contact Tier + Combined Tier) and three persona types (Exhibitor, Target Company, Target People)
+- Specification expanded with User Story 4 (Persona Type Management - P2), User Story 5 (MEDDIC Qualification - P3), User Story 6 (Tagging and List Management - P3)
+- New functional requirements: FR-025 (three persona types), FR-026 (MEDDIC analysis), FR-027-028 (async report generation), FR-029-030 (tags and lists), FR-031 (proximity detection), FR-032 (dual tiering)
+- HubSpot integration (T088-T098) intentionally skipped, using Local Storage as primary storage adapter
+- All User Story 1 tasks (T001-T075) completed: Full MVP workflow operational with CSV upload, multi-LLM enrichment, persona-based scoring, tiered reports, and export functionality
+- MySQL adapter implementation (T076-T087) completed for production database support
+- Database setup automation (T108-T109) completed with npm scripts for schema management
+- **PENDING IMPLEMENTATION**: User Stories 4, 5, 6 (Persona Types, MEDDIC, Tags/Lists) require new task breakdown and are not yet scheduled in this tasks.md file
+
 ## Format: `- [ ] [ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
@@ -110,37 +121,42 @@
 
 ### Report Generation and Viewing (FR-005, FR-012, FR-013)
 
-- [ ] T054 [P] [US1] Implement report generation logic in storage adapter generateReport method with tier grouping and statistics calculation
-- [ ] T055 [P] [US1] Create report API routes in app/api/reports/route.ts for listing and generating reports
-- [ ] T056 [P] [US1] Create report detail API route in app/api/reports/[reportId]/route.ts for fetching individual reports
-- [ ] T057 [US1] Create reports listing page in app/reports/page.tsx with filtering controls
-- [ ] T058 [US1] Create report detail page in app/reports/[reportId]/page.tsx with enriched leads table
-- [ ] T059 [P] [US1] Create tier filter component in components/reports/tier-filter.tsx with visual badges (Hot=Red, Warm=Orange, Cold=Blue, Unscored=Gray)
-- [ ] T060 [P] [US1] Create enriched leads data table component in components/reports/lead-table.tsx with sorting and search
+- [X] T054 [P] [US1] Implement report generation logic in storage adapter generateReport method with tier grouping and statistics calculation
+- [X] T055 [P] [US1] Create report API routes in app/api/reports/route.ts for listing and generating reports
+- [X] T056 [P] [US1] Create report detail API route in app/api/reports/[reportId]/route.ts for fetching individual reports
+- [X] T057 [US1] Create reports listing page in app/reports/page.tsx with filtering controls
+- [X] T058 [US1] Create report detail page in app/reports/[reportId]/page.tsx with enriched leads table
+- [X] T059 [P] [US1] Create tier filter component in components/reports/tier-filter.tsx with visual badges (Hot=Red, Warm=Orange, Cold=Blue, Unscored=Gray)
+- [X] T060 [P] [US1] Create enriched leads data table component in components/reports/lead-table.tsx with sorting and search
 
 ### Report Export Functionality (FR-013, FR-018, FR-019)
 
-- [ ] T061 [P] [US1] Implement CSV export utility in lib/export/csv-exporter.ts using papaparse with CRM-compatible column headers
-- [ ] T062 [P] [US1] Implement PDF export utility in lib/export/pdf-exporter.ts using Puppeteer with tier-grouped formatting
-- [ ] T063 [P] [US1] Create CRO_summary.md template in lib/templates/cro-summary.md with sections for executive summary, top 10 Hot leads, and follow-up priorities
-- [ ] T064 [P] [US1] Implement CRO_summary.md generator in lib/export/cro-summary-generator.ts that generates executive summary, top 10 Hot leads with key insights, and recommended follow-up priorities by tier per FR-018
-- [ ] T065 [P] [US1] Create company report template in lib/templates/company-report.md with sections for company profile, persona match analysis, actionable insights, and tier justification
-- [ ] T066 [P] [US1] Implement company report generator in lib/export/company-report-generator.ts that generates individual reports with company profile, persona match analysis with fit score breakdown, actionable insights (pain points and conversation starters), and tier assignment justification per FR-019
-- [ ] T067 [US1] Create report export API route in app/api/reports/[reportId]/export/route.ts handling CSV, PDF, CRO_summary.md, and company reports formats
-- [ ] T068 [US1] Create export button component in components/reports/export-button.tsx with format selector (CSV, PDF, CRO_summary.md, company reports)
-- [ ] T069 [US1] Update storage adapter exportToFormat method implementation in LocalStorageAdapter to save CRO_summary.md to data/events/{eventId}/CRO_summary.md and company reports to data/events/{eventId}/companies/{companyId}.md
+- [X] T061 [P] [US1] Implement CSV export utility in lib/export/csv-exporter.ts using papaparse with CRM-compatible column headers
+- [X] T062 [P] [US1] Implement PDF export utility in lib/export/pdf-exporter.ts using Puppeteer with tier-grouped formatting
+- [X] T063 [P] [US1] Create CRO_summary.md template in lib/templates/cro-summary.md with sections for executive summary, top 10 Hot leads, and follow-up priorities
+- [X] T064 [P] [US1] Implement CRO_summary.md generator in lib/export/cro-summary-generator.ts that generates executive summary, top 10 Hot leads with key insights, and recommended follow-up priorities by tier per FR-018
+- [X] T065 [P] [US1] Create company report template in lib/templates/company-report.md with sections for company profile, persona match analysis, actionable insights, and tier justification
+- [X] T066 [P] [US1] Implement company report generator in lib/export/company-report-generator.ts that generates individual reports with company profile, persona match analysis with fit score breakdown, actionable insights (pain points and conversation starters), and tier assignment justification per FR-019
+- [X] T067 [US1] Create report export API route in app/api/reports/[reportId]/export/route.ts handling CSV, PDF, CRO_summary.md, and company reports formats
+- [X] T068 [US1] Create export button component in components/reports/export-button.tsx with format selector (CSV, PDF, CRO_summary.md, company reports)
+- [X] T069 [US1] Update storage adapter exportToFormat method implementation in LocalStorageAdapter to save CRO_summary.md to data/events/{eventId}/CRO_summary.md and company reports to data/events/{eventId}/companies/{companyId}.md
 
 ### Duplicate Detection and Resolution (FR-015, Edge Case Handling)
 
-- [ ] T070 [US1] Implement duplicate detection logic in CSV upload process checking for matching email addresses within same event
-- [ ] T071 [US1] Create duplicate comparison API route in app/api/badge-scans/duplicate-comparison/route.ts returning side-by-side scan data
-- [ ] T072 [US1] Create duplicate resolution API route in app/api/badge-scans/resolve-duplicate/route.ts with keep-both, merge, and mark-primary actions
-- [ ] T073 [US1] Create duplicate comparison UI component in components/upload/duplicate-comparison.tsx showing scan timestamps, booth locations, and enrichment data
+- [X] T070 [US1] Implement duplicate detection logic in CSV upload process checking for matching email addresses within same event
+- [X] T071 [US1] Create duplicate comparison API route in app/api/badge-scans/duplicate-comparison/route.ts returning side-by-side scan data
+- [X] T072 [US1] Create duplicate resolution API route in app/api/badge-scans/resolve-duplicate/route.ts with keep-both, merge, and mark-primary actions
+- [X] T073 [US1] Create duplicate comparison UI component in components/upload/duplicate-comparison.tsx showing scan timestamps, booth locations, and enrichment data
 
 ### Event Management
 
-- [ ] T074 [P] [US1] Create event API routes in app/api/events/route.ts for creating and listing events
-- [ ] T075 [US1] Add event creation form to dashboard for associating uploads with trade show events
+- [X] T074 [P] [US1] Create event API routes in app/api/events/route.ts for creating and listing events
+- [X] T075 [US1] Add event creation form to dashboard for associating uploads with trade show events
+
+### Manual Enrichment Fallback (Constitution VII)
+
+- [X] T148 [US1] Create manual enrichment form component in components/enrichment/manual-enrichment-form.tsx for user to input company data when automated enrichment fails per Constitution VII
+- [X] T149 [US1] Create manual enrichment API route in app/api/enrichment/manual/route.ts to save manually-entered company data and trigger persona matching
 
 **Checkpoint**: User Story 1 complete - full end-to-end workflow from CSV upload to enriched tiered reports with CRO_summary.md and company reports functional and independently testable. This represents the MVP with immediate business value.
 
@@ -163,7 +179,7 @@
 - [X] T082 [P] [US2] Implement all Event operations for MySQL adapter (saveEvent, getEvent, getAllEvents)
 - [X] T083 [P] [US2] Implement configuration operations for MySQL adapter (saveStorageConfig, getActiveStorageConfig, setActiveStorageConfig)
 - [X] T084 [P] [US2] Implement migration operations for MySQL adapter (exportAll, importAll with transaction support)
-- [ ] T085 [P] [US2] Implement exportToFormat for MySQL adapter to generate CRO_summary.md and company reports per constitution
+- [X] T085 [P] [US2] Implement exportToFormat for MySQL adapter to generate CRO_summary.md and company reports per constitution
 - [X] T086 [US2] Implement connection management for MySQL adapter (testConnection, close with connection pool cleanup)
 - [X] T087 [US2] Add MySQL adapter to storage factory registry in lib/storage/factory.ts
 
@@ -195,11 +211,12 @@
 - [ ] T105 [US2] Create migration progress tracking component in components/settings/migration-progress.tsx with row counts and validation status
 - [ ] T106 [US2] Add data integrity validation after migration (compare record counts, sample queries) in migration API route
 - [ ] T107 [US2] Create migration rollback functionality if validation fails
+- [ ] T147 [US2] Implement storage operation retry queue with exponential backoff in lib/storage/retry-queue.ts for handling storage backend unavailability per FR-007a (queue failed operations, continue with in-memory storage, display warning banner)
 
 ### Database Setup Automation
 
 - [X] T108 [P] [US2] Create database setup npm script in package.json running database/schema.sql
-- [X] T109 [P] [US2] Create database migration runner script in scripts/migrate.ts for version management
+- [X] T109 [P] [US2] Create database migration runner script in scripts/migrate.ts for version management (npm scripts configured in package.json)
 
 **Checkpoint**: User Story 2 complete - all three storage adapters (Local Storage, MySQL, HubSpot) implemented and functional. Administrators can configure and switch between adapters with automatic data migration. Production deployments can now integrate with existing databases and CRM systems.
 
@@ -238,8 +255,8 @@
 ### Persona-Based Filtering in Reports
 
 - [X] T122 [US3] Add persona filter to report generation (extend ReportFilters interface with personas array)
-- [ ] T123 [US3] Update report filtering UI to include persona selector in tier filter component
-- [ ] T124 [US3] Update report generation logic to support persona-based filtering
+- [X] T123 [US3] Update report filtering UI to include persona selector in tier filter component
+- [X] T124 [US3] Update report generation logic to support persona-based filtering
 
 **Checkpoint**: User Story 3 complete - full persona customization workflow functional. Marketing operations can define custom personas, apply them to enrichment process, and see differentiated lead scoring based on business-specific criteria. Platform now fully customizable to target market definitions.
 
@@ -261,7 +278,7 @@
 - [ ] T134 [P] Implement CSRF protection for state-changing API operations
 - [ ] T135 [P] Add SQL injection prevention validation in MySQL adapter (use parameterized queries)
 - [ ] T136 Create tier alignment validation testing task implementing blind comparison study with N=100 sample, 2+ sales reps, and Cohen's kappa >0.85 calculation per SC-004
-- [ ] T137 Validate all quickstart.md integration test scenarios work end-to-end
+- [ ] T137 Validate all 7 quickstart.md integration test scenarios work end-to-end: (1) CSV Upload to Report Happy Path, (2) Column Mapping Preview, (3) Storage Migration Local→MySQL, (4) Duplicate Detection, (5) Multi-LLM Consensus, (6) Persona Scoring, (7) API Failure Graceful Degradation
 - [X] T138 [P] Create sample CSV files for testing in __tests__/fixtures/ (sample-badge-scans-50.csv, non-standard-headers.csv, duplicate-scans.csv)
 - [ ] T139 [P] Setup CI/CD pipeline configuration for automated testing and deployment
 - [ ] T140 [P] Add error boundary components for graceful error handling in UI
@@ -270,7 +287,10 @@
 - [ ] T143 [P] Optimize bundle size (code splitting, lazy loading for report pages)
 - [X] T144 Code cleanup: Remove unused imports, console.logs, and dead code across all files
 - [X] T145 Final constitution compliance audit (verify all 7 principles implemented correctly)
-- [ ] T146 Performance benchmark validation (5000 scans in under 2 hours, report filtering under 2 seconds)
+- [ ] T146 Performance benchmark validation with specific test cases: (a) SC-001: 100 badge scans processed in under 5 minutes, (b) SC-005: 1000 badge scans processed without degradation, (c) SC-008: Report filtering returns results in under 2 seconds for 500 leads dataset
+- [ ] T150 [P] Implement enrichment success rate monitoring dashboard widget in components/dashboard/enrichment-metrics.tsx tracking success/failure rates per SC-002 (80%+ target)
+- [ ] T151 [P] Implement user analytics tracking in lib/analytics/tracker.ts for persona adoption metrics per SC-007 (90% adoption target within first week)
+- [ ] T152 [P] Create CRM import validation tests in __tests__/integration/crm-import.test.ts validating CSV/PDF exports against Salesforce, HubSpot, Zoho import schemas per SC-009
 
 ---
 

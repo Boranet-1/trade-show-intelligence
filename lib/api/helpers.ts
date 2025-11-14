@@ -10,6 +10,9 @@ import type { APISuccessResponse, APIErrorResponse } from '@/lib/types'
 import { formatAPIError, AppError } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 
+// Export alias for backward compatibility
+export { formatAPIError as formatApiError }
+
 /**
  * Create success response
  * @param data - Response data

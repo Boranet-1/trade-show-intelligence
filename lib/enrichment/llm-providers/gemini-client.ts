@@ -121,7 +121,7 @@ export class GeminiClient {
     additionalContext?: string
   ): Promise<CompanyEnrichmentResult> {
     const model = this.genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.5-flash',  // Using Gemini 2.5 Flash for fast, high-quality company enrichment
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 2048,
@@ -217,7 +217,7 @@ Return ONLY the JSON object, no additional explanation.`
    */
   async testConnection(): Promise<boolean> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' })
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
       await model.generateContent('Test')
       return true
     } catch {

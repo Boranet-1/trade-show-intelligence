@@ -5,7 +5,7 @@
  * Toggle via ENABLE_MOCK_ENRICHMENT environment variable
  */
 
-import type { LeadTier } from '@/lib/types'
+import { LeadTier } from '@/lib/types'
 import { getConfig } from '@/lib/config'
 import {
   enrichCompanyWithLLM,
@@ -71,16 +71,16 @@ function enrichCompanyMock(companyName: string): EnrichedCompanyData {
 
   switch (tierValue) {
     case 1:
-      tier = 'Hot'
+      tier = LeadTier.Hot
       break
     case 2:
-      tier = 'Warm'
+      tier = LeadTier.Warm
       break
     case 3:
-      tier = 'Cold'
+      tier = LeadTier.Cold
       break
     default:
-      tier = 'Unscored'
+      tier = LeadTier.Unscored
   }
 
   // Generate random company size

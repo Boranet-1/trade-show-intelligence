@@ -1,7 +1,7 @@
 # Technical Research: Trade Show Intelligence Platform
 
 **Feature**: 001-trade-show-intelligence
-**Date**: 2025-11-09
+**Date**: 2025-11-14 (Updated from 2025-11-09)
 **Purpose**: Resolve all NEEDS CLARIFICATION items from Technical Context and document technology decisions
 
 ---
@@ -12,15 +12,17 @@
 
 **Unknown**: Testing framework choice (Jest vs Vitest vs alternatives)
 
-**Decision**: Vitest for unit/integration tests, Playwright for E2E tests
+**Decision**: Jest + React Testing Library for unit/integration tests, Playwright for E2E tests
 
 **Rationale**:
-- **Vitest** chosen over Jest because:
-  - Native ESM support (better compatibility with Next.js 13 App Router)
-  - Vite-based (faster test execution, HMR for tests)
-  - Jest-compatible API (minimal migration friction)
-  - Better TypeScript support out-of-the-box
-  - Faster startup times for large codebases
+- **Jest** chosen over Vitest because:
+  - Most mature and widely adopted testing framework in Next.js ecosystem
+  - First-class TypeScript support with excellent Next.js integration via `next/jest` preset
+  - Next.js official documentation and examples use Jest as default
+  - Snapshot testing valuable for detecting unintended UI changes in reports and dashboards
+  - Built-in code coverage reporting supports quality gate validation (target: 80%+ coverage)
+  - Extensive mocking capabilities essential for testing LLM provider fallback chains
+  - Larger community and more third-party integrations (especially for Next.js 13 App Router)
 - **Playwright** for E2E because:
   - Multi-browser testing (Chromium, Firefox, WebKit)
   - Auto-wait mechanisms reduce flaky tests
@@ -29,14 +31,16 @@
   - Screenshot/video capture on test failures (debugging batch processing issues)
 
 **Alternatives Considered**:
-- **Jest**: Mature ecosystem but slower with ESM modules, requires additional configuration for Next.js App Router
+- **Vitest**: Faster than Jest (native ESM support), but Next.js 13 App Router has less mature integration. Community adoption is lower for Next.js projects specifically. While Vitest is growing in popularity, Jest remains the de facto standard for Next.js applications.
 - **Cypress**: Good E2E framework but Playwright has better TypeScript support and parallel execution
-- **Testing Library alone**: Excellent for component testing but requires additional framework (Vitest/Jest) anyway
+- **Testing Library alone**: Excellent for component testing but requires additional framework (Jest/Vitest) anyway
 
 **Implementation Notes**:
-- Configure Vitest with `vitest.config.ts` extending Next.js config
-- Use `@testing-library/react` for component tests
-- Mock LLM API calls in unit tests using Vitest's `vi.mock()`
+- Configure Jest with `next/jest` preset for automatic Next.js compatibility
+- Use `@testing-library/react` for component tests with user-centric queries
+- Use `@testing-library/user-event` for realistic user interaction simulation
+- Mock LLM API calls in unit tests using `jest.mock()` to avoid rate limits
+- Mock file system operations for Local Storage adapter testing
 - Use Playwright fixtures for E2E test data (sample CSV files, mocked enrichment responses)
 
 ---

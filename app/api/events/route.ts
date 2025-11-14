@@ -28,7 +28,7 @@ export async function GET(): Promise<NextResponse<APISuccessResponse<Event[]> | 
       data: events,
     })
   } catch (error) {
-    logger.error('Failed to retrieve events:', error)
+    logger.error('Failed to retrieve events:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {
@@ -114,7 +114,7 @@ export async function POST(
       { status: 201 }
     )
   } catch (error) {
-    logger.error('Failed to create event:', error)
+    logger.error('Failed to create event:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {

@@ -12,10 +12,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createStorageAdapter } from '@/lib/storage/factory'
+import { getActiveStorageAdapter } from '@/lib/storage'
 import { createEnrichmentOrchestrator } from '@/lib/enrichment/orchestrator'
 import { batchJobQueue, BatchJobStatus } from '@/lib/enrichment/batch-queue'
 import { formatApiError } from '@/lib/api/helpers'
+import { EnrichmentStatus } from '@/lib/types'
 import type { BadgeScan, Persona } from '@/lib/types'
 
 const BATCH_SIZE = 10 // Process 10 companies at a time
@@ -39,17 +40,20 @@ export async function POST(req: NextRequest) {
     // Validation
     if (!eventId || !badgeScanIds || badgeScanIds.length === 0) {
       return NextResponse.json(
-        formatApiError(
-          'Missing required fields',
-          'Provide eventId and badgeScanIds in request body',
-          'Example: { "eventId": "aws-reinvent-2025", "badgeScanIds": ["scan-id-1", "scan-id-2"] }'
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'Missing required fields',
+            howToFix: 'Provide eventId and badgeScanIds in request body',
+            exampleFormat: '{ "eventId": "aws-reinvent-2025", "badgeScanIds": ["scan-id-1", "scan-id-2"] }'
+          }
+        },
         { status: 400 }
       )
     }
 
-    // Create storage adapter
-    const storage = await createStorageAdapter()
+    // Get active storage adapter
+    const storage = await getActiveStorageAdapter()
 
     // Fetch badge scans for enrichment
     const badgeScans = await storage.getAllBadgeScans(eventId)
@@ -57,11 +61,14 @@ export async function POST(req: NextRequest) {
 
     if (scansToEnrich.length === 0) {
       return NextResponse.json(
-        formatApiError(
-          'No badge scans found',
-          'Verify badge scan IDs exist for this event',
-          `Example: Check that badge scans exist for event ${eventId}`
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'No badge scans found',
+            howToFix: 'Verify badge scan IDs exist for this event',
+            exampleFormat: `Check that badge scans exist for event ${eventId}`
+          }
+        },
         { status: 404 }
       )
     }
@@ -78,11 +85,14 @@ export async function POST(req: NextRequest) {
 
     if (personas.length === 0) {
       return NextResponse.json(
-        formatApiError(
-          'No personas found',
-          'Create at least one persona or ensure default personas exist',
-          'Example: Use /api/personas to create a persona template'
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'No personas found',
+            howToFix: 'Create at least one persona or ensure default personas exist',
+            exampleFormat: 'Use /api/personas to create a persona template'
+          }
+        },
         { status: 400 }
       )
     }
@@ -108,11 +118,14 @@ export async function POST(req: NextRequest) {
     console.error('Batch enrichment API error:', error)
 
     return NextResponse.json(
-      formatApiError(
-        'Failed to start batch enrichment',
-        'Check that storage adapter is configured and LLM API keys are set',
-        'Example: Verify ANTHROPIC_API_KEY, OPENAI_API_KEY environment variables'
-      ),
+      {
+        success: false,
+        error: {
+          whatFailed: 'Failed to start batch enrichment',
+          howToFix: 'Check that storage adapter is configured and LLM API keys are set',
+          exampleFormat: 'Verify ANTHROPIC_API_KEY, OPENAI_API_KEY environment variables'
+        }
+      },
       { status: 500 }
     )
   }
@@ -128,11 +141,14 @@ export async function GET(req: NextRequest) {
 
   if (!jobId) {
     return NextResponse.json(
-      formatApiError(
-        'Missing jobId',
-        'Provide jobId as query parameter',
-        'Example: GET /api/enrichment/batch?jobId=job_123456'
-      ),
+      {
+        success: false,
+        error: {
+          whatFailed: 'Missing jobId',
+          howToFix: 'Provide jobId as query parameter',
+          exampleFormat: 'GET /api/enrichment/batch?jobId=job_123456'
+        }
+      },
       { status: 400 }
     )
   }
@@ -141,11 +157,14 @@ export async function GET(req: NextRequest) {
   const job = batchJobQueue.getJob(jobId)
   if (!job) {
     return NextResponse.json(
-      formatApiError(
-        'Job not found',
-        'Verify job ID is correct',
-        `Example: Check that job ${jobId} exists`
-      ),
+      {
+        success: false,
+        error: {
+          whatFailed: 'Job not found',
+          howToFix: 'Verify job ID is correct',
+          exampleFormat: `Check that job ${jobId} exists`
+        }
+      },
       { status: 404 }
     )
   }
@@ -208,20 +227,18 @@ async function processBatchEnrichment(
   // Get API keys from environment
   const claudeKey = process.env.ANTHROPIC_API_KEY
   const openaiKey = process.env.OPENAI_API_KEY
-  const geminiKey = process.env.GOOGLE_API_KEY
-  const perplexityKey = process.env.PERPLEXITY_API_KEY
+  const geminiKey = process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY
 
   // Create orchestrator
   const orchestrator = createEnrichmentOrchestrator(
     { enableLogging: true },
     claudeKey,
     openaiKey,
-    geminiKey,
-    perplexityKey
+    geminiKey
   )
 
   // Get storage adapter
-  const storage = await createStorageAdapter()
+  const storage = await getActiveStorageAdapter()
 
   // Mark job as started
   batchJobQueue.startJob(jobId)
@@ -237,7 +254,7 @@ async function processBatchEnrichment(
         batchJobQueue.updateProgress(jobId, scan.company)
 
         // Update badge scan status to PROCESSING
-        await storage.updateBadgeScanStatus(scan.id, 'PROCESSING')
+        await storage.updateBadgeScanStatus(scan.id, EnrichmentStatus.PROCESSING)
 
         // Enrich badge scan
         const result = await orchestrator.enrichBadgeScan(scan, personas)
@@ -273,7 +290,7 @@ async function processBatchEnrichment(
         console.error(`Failed to enrich badge scan ${scan.id}:`, error)
 
         // Mark scan as failed
-        await storage.updateBadgeScanStatus(scan.id, 'FAILED')
+        await storage.updateBadgeScanStatus(scan.id, EnrichmentStatus.FAILED)
 
         // Update job progress with failed result
         const failedResult = {
@@ -283,7 +300,7 @@ async function processBatchEnrichment(
           bestPersonaMatch: null,
           assignedTier: 'Unscored',
           actionableInsights: null,
-          status: 'FAILED' as const,
+          status: EnrichmentStatus.FAILED,
           error: error instanceof Error ? error.message : String(error),
           processedAt: new Date(),
         }
@@ -300,4 +317,20 @@ async function processBatchEnrichment(
 
   // Mark job as complete
   batchJobQueue.completeJob(jobId)
+
+  // Auto-generate report after enrichment completes
+  try {
+    const job = batchJobQueue.getJob(jobId)
+    if (job && job.eventId) {
+      console.log(`[Batch Enrichment] Auto-generating report for event ${job.eventId}`)
+
+      // Generate report with all enriched badge scans
+      const report = await storage.generateReport(job.eventId)
+
+      console.log(`[Batch Enrichment] Report generated: ${report.id} with ${report.badgeScanIds.length} badge scans`)
+    }
+  } catch (error) {
+    console.error('[Batch Enrichment] Failed to auto-generate report:', error)
+    // Don't fail the job if report generation fails
+  }
 }

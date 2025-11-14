@@ -23,14 +23,14 @@ export async function GET(request: Request) {
         }
         const client = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY })
         await client.messages.create({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-sonnet-4-5-20250929',
           max_tokens: 10,
           messages: [{ role: 'user', content: 'Say "OK"' }]
         })
         result = {
           provider: 'Anthropic Claude',
           status: 'Connected',
-          model: 'claude-3-haiku-20240307'
+          model: 'claude-sonnet-4-5-20250929'
         }
         break
       }
@@ -58,12 +58,12 @@ export async function GET(request: Request) {
           throw new Error('GOOGLE_AI_API_KEY not configured')
         }
         const genAI = new GoogleGenerativeAI(config.GOOGLE_AI_API_KEY)
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
         await model.generateContent('Say "OK"')
         result = {
           provider: 'Google Gemini',
           status: 'Connected',
-          model: 'gemini-pro'
+          model: 'gemini-2.5-flash'
         }
         break
       }
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
             'HTTP-Referer': 'http://localhost:3000',
           },
           body: JSON.stringify({
-            model: 'anthropic/claude-3.5-haiku',
+            model: 'perplexity/sonar-pro',
             messages: [{ role: 'user', content: 'Say "OK"' }],
             max_tokens: 10
           })
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
         result = {
           provider: 'OpenRouter',
           status: 'Connected',
-          model: 'anthropic/claude-3.5-haiku'
+          model: 'perplexity/sonar-pro'
         }
         break
       }

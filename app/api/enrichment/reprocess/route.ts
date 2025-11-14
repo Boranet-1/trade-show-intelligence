@@ -93,7 +93,7 @@ export async function POST(): Promise<NextResponse<APISuccessResponse<{ scansRep
 
         reprocessedCount++
       } catch (error) {
-        logger.error(`Failed to reprocess scan ${scan.id}:`, error)
+        logger.error(`Failed to reprocess scan ${scan.id}:`, error instanceof Error ? error : undefined)
         // Continue with other scans even if one fails
       }
     }
@@ -106,7 +106,7 @@ export async function POST(): Promise<NextResponse<APISuccessResponse<{ scansRep
       message: `Successfully initiated re-processing of ${reprocessedCount} enriched scans`,
     })
   } catch (error) {
-    logger.error('Failed to reprocess scans:', error)
+    logger.error('Failed to reprocess scans:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {

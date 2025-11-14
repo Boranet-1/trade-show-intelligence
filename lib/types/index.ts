@@ -310,11 +310,31 @@ export interface ColumnMapping {
   confidence: 'exact' | 'fuzzy' | 'position'
 }
 
+// Upload result for mapping preview (before confirmation)
+export interface CSVUploadPreview {
+  success: boolean
+  headers: string[]
+  sampleRows: Record<string, string>[]
+  detectedMappings: ColumnMapping[]
+  unmappedColumns: string[]
+  confidence: 'high' | 'medium' | 'low'
+  totalRows: number
+  errors: CSVValidationError[]
+}
+
+// Final upload result after mapping confirmation
 export interface CSVUploadResult {
   success: boolean
   scansImported: number
+  scanIds: string[]
+  eventId: string
   errors: CSVValidationError[]
   columnMappings: ColumnMapping[]
+  duplicates?: Array<{
+    newScanEmail: string
+    duplicateCount: number
+    existingScanIds: string[]
+  }>
 }
 
 // ===== LLM and Enrichment Types =====

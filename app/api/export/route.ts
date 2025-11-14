@@ -16,7 +16,7 @@ import {
   exportLeadsByTierToCSV,
   generateCSVFilename,
 } from '@/lib/export/csv'
-import type { LeadTier } from '@/lib/types'
+import { LeadTier } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
           )
         }
 
-        const scans = await storage.getBadgeScansByEvent(eventId)
+        const scans = await storage.getAllBadgeScans(eventId)
         csvContent = exportBadgeScansToCSV(scans)
         filename = generateCSVFilename(`badge-scans-${eventId}`)
         break
@@ -62,7 +62,10 @@ export async function GET(request: NextRequest) {
           )
         }
 
-        const companies = await storage.getEnrichedCompaniesByEvent(eventId)
+        const scans = await storage.getAllBadgeScans(eventId)
+        const companies = (await Promise.all(
+          scans.map(scan => storage.getEnrichedCompany(scan.id))
+        )).filter((c): c is NonNullable<typeof c> => c !== null)
         csvContent = exportEnrichedCompaniesToCSV(companies)
         filename = generateCSVFilename(`enriched-companies-${eventId}`)
         break
@@ -76,7 +79,10 @@ export async function GET(request: NextRequest) {
           )
         }
 
-        const matches = await storage.getPersonaMatchesByEvent(eventId)
+        const scans = await storage.getAllBadgeScans(eventId)
+        const matches = (await Promise.all(
+          scans.map(scan => storage.getPersonaMatchesForScan(scan.id))
+        )).flat()
         csvContent = exportPersonaMatchesToCSV(matches)
         filename = generateCSVFilename(`persona-matches-${eventId}`)
         break
@@ -95,7 +101,10 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Report not found' }, { status: 404 })
         }
 
-        const matches = await storage.getPersonaMatchesByEvent(report.eventId)
+        const scans = await storage.getAllBadgeScans(report.eventId)
+        const matches = (await Promise.all(
+          scans.map(scan => storage.getPersonaMatchesForScan(scan.id))
+        )).flat()
         csvContent = exportReportToCSV(report, matches)
         filename = generateCSVFilename(`report-${reportId}`)
         break
@@ -116,7 +125,7 @@ export async function GET(request: NextRequest) {
           )
         }
 
-        const validTiers: LeadTier[] = ['Hot', 'Warm', 'Cold', 'Unscored']
+        const validTiers: LeadTier[] = [LeadTier.Hot, LeadTier.Warm, LeadTier.Cold, LeadTier.Unscored]
         if (!validTiers.includes(tier)) {
           return NextResponse.json(
             { error: `Invalid tier. Must be one of: ${validTiers.join(', ')}` },
@@ -124,7 +133,10 @@ export async function GET(request: NextRequest) {
           )
         }
 
-        const matches = await storage.getPersonaMatchesByEvent(eventId)
+        const scans = await storage.getAllBadgeScans(eventId)
+        const matches = (await Promise.all(
+          scans.map(scan => storage.getPersonaMatchesForScan(scan.id))
+        )).flat()
         csvContent = exportLeadsByTierToCSV(matches, tier)
         filename = generateCSVFilename(`${tier.toLowerCase()}-leads-${eventId}`)
         break

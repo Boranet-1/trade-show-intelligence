@@ -49,12 +49,11 @@ export class EnrichmentOrchestrator {
     config: Partial<OrchestratorConfig> = {},
     claudeKey?: string,
     openaiKey?: string,
-    geminiKey?: string,
-    perplexityKey?: string
+    geminiKey?: string
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config }
 
-    this.companyResearchAgent = new CompanyResearchAgent(claudeKey, openaiKey, geminiKey, perplexityKey)
+    this.companyResearchAgent = new CompanyResearchAgent(claudeKey, openaiKey, geminiKey)
     this.personaMatcherAgent = new PersonaMatcherAgent()
     this.painPointAnalyzerAgent = new PainPointAnalyzerAgent(claudeKey)
 
@@ -291,8 +290,7 @@ export function createEnrichmentOrchestrator(
   config?: Partial<OrchestratorConfig>,
   claudeKey?: string,
   openaiKey?: string,
-  geminiKey?: string,
-  perplexityKey?: string
+  geminiKey?: string
 ): EnrichmentOrchestrator {
-  return new EnrichmentOrchestrator(config, claudeKey, openaiKey, geminiKey, perplexityKey)
+  return new EnrichmentOrchestrator(config, claudeKey, openaiKey, geminiKey)
 }

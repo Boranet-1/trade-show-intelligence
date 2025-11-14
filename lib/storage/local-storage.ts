@@ -296,12 +296,20 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
   }
 
   async generateReport(eventId: string, filters?: ReportFilters): Promise<Report> {
-    const scans = await this.getAllBadgeScans(eventId)
-    let filteredScans = scans
+    const allScans = await this.getAllBadgeScans(eventId)
+
+    // CRITICAL: Filter out duplicates marked as MANUAL_REVIEW to ensure unique outputs
+    // This prevents duplicate leads from appearing in reports
+    const scans = allScans.filter(scan => scan.enrichmentStatus !== EnrichmentStatus.MANUAL_REVIEW)
+
+    // Remove duplicates by email (additional safeguard)
+    const uniqueScans = this.deduplicateByEmail(scans)
+
+    let filteredScans = uniqueScans
 
     // Apply filters
     if (filters) {
-      filteredScans = await this.applyFilters(scans, filters)
+      filteredScans = await this.applyFilters(uniqueScans, filters)
     }
 
     // Calculate statistics
@@ -319,6 +327,39 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
 
     await this.saveReport(report)
     return report
+  }
+
+  /**
+   * Deduplicate badge scans by email address
+   * Keeps the most recently updated scan when duplicates are found
+   */
+  private deduplicateByEmail(scans: BadgeScan[]): BadgeScan[] {
+    const emailMap = new Map<string, BadgeScan>()
+    const noEmailScans: BadgeScan[] = []
+
+    for (const scan of scans) {
+      if (!scan.email) {
+        noEmailScans.push(scan)
+        continue
+      }
+
+      const email = scan.email.toLowerCase()
+      const existing = emailMap.get(email)
+
+      if (!existing) {
+        emailMap.set(email, scan)
+      } else {
+        // Keep the most recently updated scan
+        const existingTime = new Date(existing.updatedAt).getTime()
+        const newTime = new Date(scan.updatedAt).getTime()
+
+        if (newTime > existingTime) {
+          emailMap.set(email, scan)
+        }
+      }
+    }
+
+    return [...Array.from(emailMap.values()), ...noEmailScans]
   }
 
   private async applyFilters(scans: BadgeScan[], filters: ReportFilters): Promise<BadgeScan[]> {
@@ -561,6 +602,10 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
   }
 
   async exportToFormat(eventId: string, format: ExportFormat): Promise<string> {
+    // Dynamic imports to avoid circular dependencies
+    const { generateCROSummary, saveCROSummary } = await import('@/lib/export/cro-summary-generator')
+    const { generateCompanyReport, saveCompanyReport } = await import('@/lib/export/company-report-generator')
+
     const event = await this.getEvent(eventId)
     if (!event) {
       throw new Error(`Event not found: ${eventId}`)
@@ -570,16 +615,60 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
     await fs.mkdir(eventDir, { recursive: true })
 
     if (format === 'CRO_summary') {
-      const summaryPath = path.join(eventDir, 'CRO_summary.md')
-      const summary = await this.generateCROSummary(eventId)
-      await fs.writeFile(summaryPath, summary, 'utf-8')
+      // Get all badge scans for the event
+      const badgeScans = await this.getAllBadgeScans(eventId)
+
+      // Get enriched companies and persona matches
+      const enrichedCompanies = new Map()
+      const personaMatches = new Map()
+
+      for (const scan of badgeScans) {
+        const enriched = await this.getEnrichedCompany(scan.id)
+        if (enriched) {
+          enrichedCompanies.set(scan.id, enriched)
+        }
+
+        const match = await this.getBestPersonaMatch(scan.id)
+        if (match) {
+          personaMatches.set(scan.id, match)
+        }
+      }
+
+      // Generate report using the existing data
+      const reports = await this.getAllReports(eventId)
+      const report = reports[0] // Use the first report or create a temporary one
+      if (!report) {
+        throw new Error('No report found for event. Generate a report first.')
+      }
+
+      // Generate CRO summary
+      const summaryContent = await generateCROSummary(
+        event,
+        report,
+        badgeScans,
+        enrichedCompanies,
+        personaMatches
+      )
+
+      // Save to file
+      const summaryPath = await saveCROSummary(eventId, summaryContent, this.dataDir)
       return summaryPath
     }
 
     if (format === 'company_reports') {
+      const badgeScans = await this.getAllBadgeScans(eventId)
       const companiesDir = path.join(eventDir, 'companies')
       await fs.mkdir(companiesDir, { recursive: true })
-      await this.generateCompanyReports(eventId, companiesDir)
+
+      // Generate individual company reports
+      for (const scan of badgeScans) {
+        const enriched = await this.getEnrichedCompany(scan.id)
+        const match = await this.getBestPersonaMatch(scan.id)
+
+        const reportContent = await generateCompanyReport(event, scan, enriched, match)
+        await saveCompanyReport(eventId, scan.id, reportContent, this.dataDir)
+      }
+
       return companiesDir
     }
 

@@ -3,11 +3,17 @@
  * Implements Constitution I: Multi-LLM Verification for zero hallucination tolerance
  *
  * Algorithm:
- * 1. Query all 4 LLM providers in parallel
+ * 1. Query all providers in parallel (3 LLMs + MCP source as 4th required provider)
  * 2. For each field, calculate consensus across responses
- * 3. Require 3/4 agreement (75%) for high confidence
- * 4. Handle ties with tiebreaker logic
+ * 3. Require 75% agreement for high confidence (3/4 providers must agree)
+ * 4. Handle ties with tiebreaker logic (MCP data weighted higher at 95% confidence)
  * 5. Mark low-consensus fields for manual review
+ *
+ * Provider Architecture (post-Perplexity removal):
+ * - Claude, GPT-4, Gemini (3 LLM providers with 70-85% confidence)
+ * - MCP (Tavily+Apify) provides real-time verified data as 4th required provider
+ * - MCP responses have 95% confidence (highest weight in tiebreaker scenarios)
+ * - Consensus threshold remains 0.75, meaning 3/4 providers must agree
  */
 
 import type { ProviderResponse, ConsensusMetadata, EnrichedCompany } from '@/lib/types'
@@ -19,8 +25,8 @@ interface ConsensusConfig {
 }
 
 const DEFAULT_CONSENSUS_CONFIG: ConsensusConfig = {
-  minAgreementThreshold: 0.75, // 3 out of 4 providers
-  tiebreaker: 'most_confident',
+  minAgreementThreshold: 0.75, // 75% agreement: 3/4 providers (3 LLMs + MCP)
+  tiebreaker: 'most_confident', // Favors MCP data (95% confidence) in ties
 }
 
 interface FieldConsensus {
@@ -32,8 +38,8 @@ interface FieldConsensus {
 }
 
 /**
- * Calculate consensus across multiple LLM provider responses
- * @param responses Array of provider responses (should be 4 for Claude, GPT-4, Gemini, Perplexity)
+ * Calculate consensus across multiple provider responses
+ * @param responses Array of provider responses (should be 4: Claude, GPT-4, Gemini, and MCP)
  * @param config Consensus configuration
  * @returns Consensus metadata for each field
  */
@@ -286,9 +292,9 @@ function selectMostConfidentValue(
  */
 function getConfidenceLevel(agreementLevel: number): 'High' | 'Medium' | 'Low' {
   if (agreementLevel >= 0.75) {
-    return 'High' // 3+ out of 4 providers agree
+    return 'High' // 3/4 providers agree (meets threshold)
   } else if (agreementLevel >= 0.5) {
-    return 'Medium' // 2 out of 4 providers agree
+    return 'Medium' // 2/4 providers agree (tie scenario)
   } else {
     return 'Low' // Less than half agree
   }
