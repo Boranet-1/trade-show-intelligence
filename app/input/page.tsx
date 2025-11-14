@@ -118,7 +118,8 @@ export default function ManualInputPage() {
         body: JSON.stringify({ id: eventId, name: eventName }),
       })
 
-      // Create badge scans
+      // Create badge scans and collect IDs
+      const badgeScanIds: string[] = []
       for (const row of validRows) {
         const badgeScanData = {
           eventId,
@@ -140,6 +141,27 @@ export default function ManualInputPage() {
 
         if (!response.ok) {
           throw new Error(`Failed to save badge scan for ${row.name}`)
+        }
+
+        const result = await response.json()
+        if (result.success && result.data?.id) {
+          badgeScanIds.push(result.data.id)
+        }
+      }
+
+      // Trigger batch enrichment for all created badge scans
+      if (badgeScanIds.length > 0) {
+        const enrichmentResponse = await fetch('/api/enrichment/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventId,
+            badgeScanIds,
+          }),
+        })
+
+        if (!enrichmentResponse.ok) {
+          console.error('Failed to trigger enrichment, but badge scans were created')
         }
       }
 
@@ -204,7 +226,13 @@ export default function ManualInputPage() {
       {/* Success Message */}
       {showSuccess && (
         <Alert variant="default" className="mb-6 bg-green-50 border-green-200">
-          Successfully processed {validCount} badge scans!
+          <div className="space-y-2">
+            <p className="font-semibold">Successfully processed badge scans!</p>
+            <p className="text-sm">
+              Badge scans have been created and enrichment is in progress.
+              You can generate reports once enrichment is complete.
+            </p>
+          </div>
         </Alert>
       )}
 
