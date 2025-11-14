@@ -1,24 +1,26 @@
 /**
  * CSV Upload API Route
  *
- * Handles CSV file uploads and saves badge scans to storage
+ * Phase 1: Returns preview data with column detection for user review
+ * Phase 2: Confirmation handled by /api/upload/confirm
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { parseCSV } from '@/lib/csv/parser'
-import { getStorageAdapter } from '@/lib/storage'
+import { detectColumnMappings } from '@/lib/csv/column-detector'
 import { errorResponse, successResponse } from '@/lib/api/helpers'
 import { AppError, ValidationError } from '@/lib/errors'
+import type { CSVUploadPreview } from '@/lib/types'
 
 /**
  * POST /api/upload
- * Upload CSV file and save badge scans
+ * Phase 1: Parse CSV and return preview with column detection
+ * Does NOT save to storage yet - that happens in /api/upload/confirm
  */
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const storageType = (formData.get('storageType') as string) || 'local'
 
     if (!file) {
       return errorResponse(
@@ -36,38 +38,62 @@ export async function POST(request: NextRequest) {
     // Read file content
     const fileContent = await file.text()
 
-    // Parse CSV
-    const parseResult = parseCSV(fileContent, {
+    // Parse CSV with papaparse to get raw data for preview
+    const Papa = (await import('papaparse')).default
+    const rawParseResult = Papa.parse<Record<string, string>>(fileContent, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header: string) => header.trim(),
+      transform: (value: string) => value.trim(),
+      preview: 5, // Only parse first 5 rows for sample
+    })
+
+    if (rawParseResult.errors.length > 0 && rawParseResult.data.length === 0) {
+      return errorResponse(
+        new ValidationError(
+          `Failed to parse CSV file: ${rawParseResult.errors[0].message}`,
+          { errors: rawParseResult.errors }
+        )
+      )
+    }
+
+    // Get headers from parse result
+    const headers = rawParseResult.meta.fields || []
+
+    if (headers.length === 0) {
+      return errorResponse(
+        new ValidationError('CSV file has no headers')
+      )
+    }
+
+    // Detect column mappings using intelligent detection
+    const detection = detectColumnMappings(headers)
+
+    // Extract first 3 rows as sample
+    const sampleRows = rawParseResult.data.slice(0, 3)
+
+    // Parse full CSV to get total row count and validate
+    const fullParseResult = parseCSV(fileContent, {
       eventId: `event-${Date.now()}`,
       eventName: file.name.replace('.csv', ''),
       skipEmptyLines: true,
     })
 
-    if (!parseResult.success || parseResult.data.length === 0) {
-      return errorResponse(
-        new ValidationError(
-          `Failed to parse CSV file: ${parseResult.errors.length} validation errors found`,
-          { errors: parseResult.errors, totalRows: parseResult.totalRows }
-        )
-      )
+    // Build preview response
+    const preview: CSVUploadPreview = {
+      success: true,
+      headers,
+      sampleRows,
+      detectedMappings: detection.mappings,
+      unmappedColumns: detection.unmappedColumns,
+      confidence: detection.confidence,
+      totalRows: fullParseResult.totalRows,
+      errors: fullParseResult.errors,
     }
 
-    // Get storage adapter
-    const storage = await getStorageAdapter(storageType as 'local' | 'sheets')
-
-    // Save badge scans
-    const scanIds = await storage.bulkImportBadgeScans(parseResult.data)
-
-    return successResponse({
-      count: scanIds.length,
-      scanIds,
-      eventId: parseResult.data[0]?.eventId,
-      totalRows: parseResult.totalRows,
-      validRows: parseResult.validRows,
-      errors: parseResult.errors,
-    })
+    return successResponse(preview)
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('Upload preview error:', error)
 
     // If it's already an AppError, pass it through
     if (error instanceof AppError) {
@@ -78,7 +104,7 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     return errorResponse(
       new AppError(
-        `Failed to upload and process CSV file: ${errorMessage}`,
+        `Failed to generate upload preview: ${errorMessage}`,
         'UPLOAD_ERROR',
         500,
         { originalError: error }

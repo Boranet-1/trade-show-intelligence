@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table'
 import { ExportButton } from '@/components/ui/export-button'
 import Link from 'next/link'
+import { Trash2 } from 'lucide-react'
 
 interface ReportSummary {
   id: string
@@ -31,37 +32,32 @@ interface ReportSummary {
   warmCount: number
   coldCount: number
   unscoredCount: number
+  // FR-032: Triple tier breakdowns
+  companyTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
+  contactTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
+  combinedTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
 }
 
-// Mock data for initial testing
-const mockReports: ReportSummary[] = [
-  {
-    id: '1',
-    eventId: 'ces-2025',
-    name: 'CES 2025 Report',
-    generatedAt: new Date().toISOString(),
-    totalScans: 150,
-    hotCount: 25,
-    warmCount: 60,
-    coldCount: 50,
-    unscoredCount: 15,
-  },
-  {
-    id: '2',
-    eventId: 'dreamforce-2024',
-    name: 'Dreamforce 2024 Report',
-    generatedAt: new Date(Date.now() - 86400000).toISOString(),
-    totalScans: 200,
-    hotCount: 40,
-    warmCount: 80,
-    coldCount: 60,
-    unscoredCount: 20,
-  },
-]
-
 export default function ReportsPage() {
-  const [reports, setReports] = useState<ReportSummary[]>(mockReports)
-  const [isLoading, setIsLoading] = useState(false)
+  const [reports, setReports] = useState<ReportSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchReports()
@@ -69,18 +65,22 @@ export default function ReportsPage() {
 
   const fetchReports = async () => {
     setIsLoading(true)
+    setError(null)
     try {
-      // Try to fetch real reports from API
       const response = await fetch('/api/reports')
       if (response.ok) {
         const result = await response.json()
-        if (result.success && result.data.length > 0) {
-          setReports(result.data)
+        if (result.success) {
+          setReports(result.data || [])
+        } else {
+          setError(result.error?.whatFailed || 'Failed to load reports')
         }
+      } else {
+        setError('Failed to fetch reports from server')
       }
-    } catch {
-      // Fall back to mock data if API not ready
-      console.log('Using mock data for reports')
+    } catch (err) {
+      console.error('Error fetching reports:', err)
+      setError(err instanceof Error ? err.message : 'Unknown error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -97,10 +97,52 @@ export default function ReportsPage() {
     })
   }
 
+  const handleDeleteReport = async (reportId: string, reportName: string) => {
+    if (!confirm(`Are you sure you want to delete "${reportName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeletingId(reportId)
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setReports(reports.filter((r) => r.id !== reportId))
+      } else {
+        const result = await response.json()
+        alert(result.error?.whatFailed || 'Failed to delete report')
+      }
+    } catch (err) {
+      console.error('Error deleting report:', err)
+      alert('Failed to delete report')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="text-center">Loading reports...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-semibold mb-2 text-red-600">Error Loading Reports</h2>
+          <p className="text-slate-600 mb-4">{error}</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => fetchReports()}>Try Again</Button>
+            <Link href="/dashboard">
+              <Button variant="outline">Back to Dashboard</Button>
+            </Link>
+          </div>
+        </Card>
       </div>
     )
   }
@@ -161,15 +203,29 @@ export default function ReportsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-2 justify-end">
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
+                      <Link href={`/reports/${report.id}`}>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </Link>
                       <ExportButton
                         type="report"
                         reportId={report.id}
                         size="sm"
                         label="Export CSV"
                       />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteReport(report.id, report.name)}
+                        disabled={deletingId === report.id}
+                      >
+                        {deletingId === report.id ? (
+                          'Deleting...'
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -227,6 +283,110 @@ export default function ReportsPage() {
           <p className="text-xs text-slate-500 mt-3">
             Import these CSV files into Google Sheets to share with your sales team
           </p>
+        </Card>
+      )}
+
+      {/* Triple Tier Breakdown (FR-032) */}
+      {reports.length > 0 && reports[0].companyTierBreakdown && (
+        <Card className="p-6 mt-6">
+          <h3 className="font-semibold mb-4">Dual-Tier Breakdown (FR-032)</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Combined tier = 60% Company Tier + 40% Contact Tier
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Company Tier */}
+            <div>
+              <h4 className="font-medium mb-3 text-center">Company Tier (60%)</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded bg-red-50">
+                  <span className="text-sm">Hot</span>
+                  <Badge variant="destructive">
+                    {reports[0].companyTierBreakdown.hot}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-orange-50">
+                  <span className="text-sm">Warm</span>
+                  <Badge variant="default">
+                    {reports[0].companyTierBreakdown.warm}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-blue-50">
+                  <span className="text-sm">Cold</span>
+                  <Badge variant="secondary">
+                    {reports[0].companyTierBreakdown.cold}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-gray-50">
+                  <span className="text-sm">Unscored</span>
+                  <Badge variant="outline">
+                    {reports[0].companyTierBreakdown.unscored}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Tier */}
+            <div>
+              <h4 className="font-medium mb-3 text-center">Contact Tier (40%)</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded bg-red-50">
+                  <span className="text-sm">Hot</span>
+                  <Badge variant="destructive">
+                    {reports[0].contactTierBreakdown?.hot || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-orange-50">
+                  <span className="text-sm">Warm</span>
+                  <Badge variant="default">
+                    {reports[0].contactTierBreakdown?.warm || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-blue-50">
+                  <span className="text-sm">Cold</span>
+                  <Badge variant="secondary">
+                    {reports[0].contactTierBreakdown?.cold || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-gray-50">
+                  <span className="text-sm">Unscored</span>
+                  <Badge variant="outline">
+                    {reports[0].contactTierBreakdown?.unscored || 0}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Combined Tier */}
+            <div>
+              <h4 className="font-medium mb-3 text-center">Combined Tier (Final)</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded bg-red-50 border-2 border-red-200">
+                  <span className="text-sm font-semibold">Hot</span>
+                  <Badge variant="destructive" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.hot || reports[0].hotCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-orange-50 border-2 border-orange-200">
+                  <span className="text-sm font-semibold">Warm</span>
+                  <Badge variant="default" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.warm || reports[0].warmCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-blue-50 border-2 border-blue-200">
+                  <span className="text-sm font-semibold">Cold</span>
+                  <Badge variant="secondary" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.cold || reports[0].coldCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-gray-50 border-2 border-gray-200">
+                  <span className="text-sm font-semibold">Unscored</span>
+                  <Badge variant="outline" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.unscored || reports[0].unscoredCount}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
         </Card>
       )}
 

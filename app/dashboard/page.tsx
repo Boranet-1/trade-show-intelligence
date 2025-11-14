@@ -13,7 +13,7 @@
  * - Quick navigation to reports and personas
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -31,6 +31,7 @@ import { ColumnMapper } from '@/components/upload/column-mapper'
 import { EnrichmentProgress } from '@/components/dashboard/enrichment-progress'
 import { AlertCircle, CheckCircle2, Loader2, Upload, Settings, Users, FileText } from 'lucide-react'
 import Link from 'next/link'
+import type { CSVUploadPreview, ColumnMapping } from '@/lib/types'
 
 type DashboardStep = 'event-setup' | 'upload' | 'column-mapping' | 'enriching' | 'complete'
 
@@ -49,9 +50,11 @@ export default function DashboardPage() {
     name: '',
   })
 
-  // Upload state
+  // Upload state - preview from step 1
+  const [uploadPreview, setUploadPreview] = useState<CSVUploadPreview | null>(null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  // Final upload result after confirmation
   const [uploadResult, setUploadResult] = useState<CSVUploadResult | null>(null)
-  const [mappingResult, setMappingResult] = useState<ColumnMappingResult | null>(null)
 
   // Enrichment state
   const [enrichmentJobId, setEnrichmentJobId] = useState<string | null>(null)
@@ -66,6 +69,13 @@ export default function DashboardPage() {
     howToFix: string
     exampleFormat: string
   } | null>(null)
+
+  // Auto-initialize personas on mount
+  useEffect(() => {
+    fetch('/api/init').catch((err) => {
+      console.error('Failed to initialize application:', err)
+    })
+  }, [])
 
   // Handle event creation
   const handleEventSetup = async () => {
@@ -112,9 +122,10 @@ export default function DashboardPage() {
     }
   }
 
-  // Handle CSV upload success
-  const handleUploadSuccess = (result: CSVUploadResult) => {
-    setUploadResult(result)
+  // Handle CSV upload success - receives preview data
+  const handleUploadSuccess = (preview: CSVUploadPreview, file: File) => {
+    setUploadPreview(preview)
+    setUploadedFile(file)
     setError(null)
     setCurrentStep('column-mapping')
   }
@@ -129,34 +140,68 @@ export default function DashboardPage() {
   }
 
   // Handle column mapping confirmation
-  const handleMappingConfirm = async (result: ColumnMappingResult) => {
-    setMappingResult(result)
+  const handleMappingConfirm = async (mappings: ColumnMapping[]) => {
+    if (!uploadedFile) {
+      setError({
+        whatFailed: 'No file available for confirmation',
+        howToFix: 'Please upload the CSV file again',
+        exampleFormat: 'File must be uploaded before confirming mappings',
+      })
+      return
+    }
+
     setError(null)
 
-    // Start enrichment process
     try {
-      // Start batch enrichment job
-      const response = await fetch('/api/enrichment/batch', {
+      // Convert mappings to Record<string, string> format
+      const mappingsRecord: Record<string, string> = {}
+      for (const mapping of mappings) {
+        mappingsRecord[mapping.csvColumn] = mapping.targetField
+      }
+
+      // Send confirmation request with file and mappings
+      const formData = new FormData()
+      formData.append('file', uploadedFile)
+      formData.append('storageType', storageType)
+      formData.append('mappings', JSON.stringify(mappingsRecord))
+      formData.append('eventId', eventDetails.id)
+      formData.append('eventName', eventDetails.name)
+
+      const response = await fetch('/api/upload/confirm', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error?.message || 'Failed to confirm upload')
+      }
+
+      const result: CSVUploadResult = (await response.json()).data
+      setUploadResult(result)
+
+      // Start batch enrichment job with the imported scan IDs
+      const enrichmentResponse = await fetch('/api/enrichment/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventId: eventDetails.id,
-          badgeScanIds: result.badgeScanIds,
+          badgeScanIds: result.scanIds,
         }),
       })
 
-      if (!response.ok) {
+      if (!enrichmentResponse.ok) {
         throw new Error('Failed to start enrichment')
       }
 
-      const data = await response.json()
-      setEnrichmentJobId(data.jobId)
-      setBadgeScanIds(result.badgeScanIds)
+      const enrichmentData = await enrichmentResponse.json()
+      setEnrichmentJobId(enrichmentData.jobId)
+      setBadgeScanIds(result.scanIds)
       setCurrentStep('enriching')
     } catch (err) {
       setError({
-        whatFailed: 'Failed to start batch enrichment',
-        howToFix: 'Check that LLM API keys are configured (ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY)',
+        whatFailed: err instanceof Error ? err.message : 'Failed to confirm upload and start enrichment',
+        howToFix: 'Check that storage adapter is configured and LLM API keys are set (ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY)',
         exampleFormat: 'Set environment variables with your API keys',
       })
     }
@@ -190,7 +235,8 @@ export default function DashboardPage() {
     setCurrentStep('event-setup')
     setEventDetails({ id: '', name: '' })
     setUploadResult(null)
-    setMappingResult(null)
+    setUploadPreview(null)
+    setUploadedFile(null)
     setEnrichmentJobId(null)
     setBadgeScanIds([])
     setError(null)
@@ -264,7 +310,7 @@ export default function DashboardPage() {
           )}
 
           {/* Step 3: Column Mapping */}
-          {currentStep === 'column-mapping' && uploadResult && (
+          {currentStep === 'column-mapping' && uploadPreview && (
             <div className="space-y-4">
               <Card>
                 <CardHeader>
@@ -279,11 +325,11 @@ export default function DashboardPage() {
               </Card>
 
               <ColumnMapper
-                headers={uploadResult?.headers || []}
-                sampleRows={uploadResult?.sampleRows || []}
-                detectedMappings={uploadResult?.detectedMappings || []}
-                unmappedColumns={uploadResult?.unmappedColumns || []}
-                confidence={uploadResult?.confidence || 'low'}
+                headers={uploadPreview.headers}
+                sampleRows={uploadPreview.sampleRows}
+                detectedMappings={uploadPreview.detectedMappings}
+                unmappedColumns={uploadPreview.unmappedColumns}
+                confidence={uploadPreview.confidence}
                 onConfirm={handleMappingConfirm}
                 onCancel={() => setCurrentStep('upload')}
               />
@@ -330,6 +376,12 @@ export default function DashboardPage() {
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                   <AlertDescription>
                     Successfully processed {badgeScanIds.length} badge scans. Your leads have been scored and categorized by tier.
+                    {uploadResult?.proximityGroupsDetected && uploadResult.proximityGroupsDetected > 0 && (
+                      <div className="mt-2 pt-2 border-t">
+                        <strong>Proximity Detection (FR-031):</strong> {uploadResult.proximityGroupsDetected} group{uploadResult.proximityGroupsDetected > 1 ? 's' : ''} detected
+                        (contacts scanned within 15 seconds)
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
 
@@ -407,6 +459,12 @@ export default function DashboardPage() {
                 <Link href="/input">
                   <Upload className="h-4 w-4 mr-2" />
                   Manual Input
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full justify-start">
+                <Link href="/settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Tags & Lists
                 </Link>
               </Button>
             </CardContent>

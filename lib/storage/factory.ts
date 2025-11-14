@@ -119,6 +119,9 @@ export async function initializeStorageAdapters(): Promise<void> {
  * @throws Error if no active configuration exists or adapter creation fails
  */
 export async function getActiveStorageAdapter(): Promise<StorageAdapter> {
+  // Ensure adapters are initialized
+  await initializeStorageAdapters()
+
   // For now, create a default LOCAL adapter
   // In production, this should:
   // 1. Load active configuration from storage
@@ -136,4 +139,12 @@ export async function getActiveStorageAdapter(): Promise<StorageAdapter> {
   }
 
   return createStorageAdapter(defaultConfig)
+}
+
+/**
+ * Convenience function to get storage adapter (alias for getActiveStorageAdapter)
+ * @returns Promise resolving to active storage adapter instance
+ */
+export async function getStorageAdapter(): Promise<StorageAdapter> {
+  return getActiveStorageAdapter()
 }

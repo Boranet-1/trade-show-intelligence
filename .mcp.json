@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "ctx7sk-1a7a0391-2b7a-452a-a4b0-bdd4df066e73"
+      }
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "hf-mcp-server": {
+      "type": "http",
+      "url": "https://huggingface.co/mcp?login"
+    },
+    "apify": {
+      "type": "http",
+      "url": "https://mcp.apify.com/?tools=actors docs experimental get-dataset get-dataset-items get-dataset-list apify/rag-web-browser apify/website-content-crawler compass/crawler-google-places apimaestro/linkedin-profile-detail dev_fusion/Linkedin-Company-Scraper zenisbit.com/icebreaker-actor curious_code/email-validator curious_coder/linkedin-jobs-scraper anchor/linkedin-profile-enrichment pratikdani/sales-navigator-profile-scraper riceman/linkedin-sales-navigator-lead-search-scraper harvestapi/linkedin-sales-navigator-lead-search-cookie apify/web-scraper dev_fusion/Linkedin-Profile-Scraper streamers/youtube-scraper apify/google-search-scraper vdrmota/contact-info-scraper apify/facebook-posts-scraper apidojo/youtube-scraper apify/cheerio-scraper pintostudio/youtube-transcript-scraper code_crafter/leads-finder supreme_coder/linkedin-post lukaskrivka/article-extractor-smart junglee/free-amazon-product-scraper apimaestro/linkedin-company-posts apimaestro/linkedin-posts-search-scraper-no-cookies harvestapi/linkedin-profile-posts caprolok/linkedin-employees-scraper peterasorensen/snacci danek/twitter-scraper-ppr apimaestro/linkedin-company-detail tri_angle/social-media-finder borderline/indeed-scraper apify/playwright-scraper scraperlink/google-search-results-serp-scraper tri_angle/yelp-scraper"
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "tavily": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@agtools/mcp-tavily"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "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"
+      }
+    }
+  }
+}

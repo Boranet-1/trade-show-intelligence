@@ -25,6 +25,10 @@ export interface EnrichmentResult {
   status: EnrichmentStatus
   error?: string
   processedAt: Date
+  // FR-032: Dual-tier calculation results
+  companyTier?: string
+  contactTier?: string
+  combinedTierCalculation?: import('@/lib/types').CombinedTierCalculation
 }
 
 export interface OrchestratorConfig {
@@ -49,12 +53,11 @@ export class EnrichmentOrchestrator {
     config: Partial<OrchestratorConfig> = {},
     claudeKey?: string,
     openaiKey?: string,
-    geminiKey?: string,
-    perplexityKey?: string
+    geminiKey?: string
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config }
 
-    this.companyResearchAgent = new CompanyResearchAgent(claudeKey, openaiKey, geminiKey, perplexityKey)
+    this.companyResearchAgent = new CompanyResearchAgent(claudeKey, openaiKey, geminiKey)
     this.personaMatcherAgent = new PersonaMatcherAgent()
     this.painPointAnalyzerAgent = new PainPointAnalyzerAgent(claudeKey)
 
@@ -98,6 +101,10 @@ export class EnrichmentOrchestrator {
         actionableInsights: painPointAnalysis,
         status: 'ENRICHED',
         processedAt: new Date(),
+        // FR-032: Include dual-tier calculation results
+        companyTier: personaMatchingResult.companyTier,
+        contactTier: personaMatchingResult.contactTier,
+        combinedTierCalculation: personaMatchingResult.combinedTierCalculation,
       }
 
       this.log(`Enrichment completed for badge scan ${badgeScan.id} with tier ${result.assignedTier}`)
@@ -291,8 +298,7 @@ export function createEnrichmentOrchestrator(
   config?: Partial<OrchestratorConfig>,
   claudeKey?: string,
   openaiKey?: string,
-  geminiKey?: string,
-  perplexityKey?: string
+  geminiKey?: string
 ): EnrichmentOrchestrator {
-  return new EnrichmentOrchestrator(config, claudeKey, openaiKey, geminiKey, perplexityKey)
+  return new EnrichmentOrchestrator(config, claudeKey, openaiKey, geminiKey)
 }

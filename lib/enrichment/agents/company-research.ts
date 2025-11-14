@@ -8,8 +8,8 @@ import type { BadgeScan, EnrichedCompany, ProviderResponse } from '@/lib/types'
 import { ClaudeClient } from '../llm-providers/claude-client'
 import { OpenAIClient } from '../llm-providers/openai-client'
 import { GeminiClient } from '../llm-providers/gemini-client'
-import { PerplexityClient } from '../llm-providers/perplexity-client'
 import { calculateConsensus, buildEnrichedCompanyFromConsensus } from '../consensus'
+import { getMCPService } from '../mcp-clients'
 
 export interface CompanyResearchResult {
   enrichedCompany: Partial<EnrichedCompany>
@@ -22,18 +22,15 @@ export class CompanyResearchAgent {
   private claudeClient: ClaudeClient
   private openaiClient: OpenAIClient
   private geminiClient: GeminiClient
-  private perplexityClient: PerplexityClient
 
   constructor(
     claudeKey?: string,
     openaiKey?: string,
-    geminiKey?: string,
-    perplexityKey?: string
+    geminiKey?: string
   ) {
     this.claudeClient = new ClaudeClient(claudeKey)
     this.openaiClient = new OpenAIClient(openaiKey)
     this.geminiClient = new GeminiClient(geminiKey)
-    this.perplexityClient = new PerplexityClient(perplexityKey)
   }
 
   /**
@@ -43,9 +40,55 @@ export class CompanyResearchAgent {
    */
   async researchCompany(badgeScan: BadgeScan): Promise<CompanyResearchResult> {
     const companyName = badgeScan.company
-    const additionalContext = this.buildContext(badgeScan)
+    let additionalContext = this.buildContext(badgeScan)
+    let mcpData: Partial<EnrichedCompany> | null = null
+
+    // 🔍 NEW: Fetch real-time web data via Tavily + Apify MCP
+    try {
+      const mcpService = getMCPService()
+      mcpData = await mcpService.enrichWithAllMCPSources(companyName)
+
+      if (mcpData && Object.keys(mcpData).length > 0) {
+        const webContext = this.buildWebDataContext(mcpData)
+        additionalContext = additionalContext
+          ? `${additionalContext}. Real-time web data: ${webContext}`
+          : `Real-time web data: ${webContext}`
+
+        const sources = mcpData.enrichmentSource || 'tavily'
+        console.log(`✅ Enhanced context with ${sources} for ${companyName}`)
+      }
+    } catch (error) {
+      // Graceful degradation per Constitution VII
+      console.warn(`⚠️ MCP enrichment failed for ${companyName}, continuing with LLM-only enrichment:`, error)
+    }
 
     const providerResponses = await this.queryAllProviders(companyName, additionalContext)
+
+    // 🆕 Add MCP data as a 5th "provider" response with higher confidence weighting
+    if (mcpData && Object.keys(mcpData).length > 0) {
+      const mcpProviderResponse: ProviderResponse = {
+        provider: 'MCP (Tavily+Apify)',
+        value: {
+          companyName: mcpData.companyName || companyName,
+          industry: mcpData.industry || null,
+          companySize: null,
+          employeeCount: mcpData.employeeCount || null,
+          annualRevenue: mcpData.annualRevenue || null,
+          headquarters: null,
+          foundedYear: null,
+          techStack: [],
+          fundingStage: null,
+          description: null,
+          website: null,
+          linkedInUrl: null,
+        },
+        confidence: 0.95, // High confidence for real-time verified data
+        responseTime: 0,
+      }
+
+      providerResponses.push(mcpProviderResponse)
+      console.log(`✅ Added MCP data as 5th verification source with 95% confidence`)
+    }
 
     const consensusMetadata = calculateConsensus(providerResponses)
 
@@ -85,7 +128,6 @@ export class CompanyResearchAgent {
       this.claudeClient.enrichCompany(companyName, additionalContext).catch(error => this.handleProviderError('Claude', error)),
       this.openaiClient.enrichCompany(companyName, additionalContext).catch(error => this.handleProviderError('GPT-4', error)),
       this.geminiClient.enrichCompany(companyName, additionalContext).catch(error => this.handleProviderError('Gemini', error)),
-      this.perplexityClient.enrichCompany(companyName, additionalContext).catch(error => this.handleProviderError('Perplexity', error)),
     ]
 
     const results = await Promise.allSettled(providerPromises)
@@ -99,8 +141,8 @@ export class CompanyResearchAgent {
       throw new Error('All LLM providers failed to enrich company data')
     }
 
-    if (successfulResponses.length < 3) {
-      console.warn(`Only ${successfulResponses.length} out of 4 providers succeeded. Consensus may be less reliable.`)
+    if (successfulResponses.length < 2) {
+      console.warn(`Only ${successfulResponses.length} out of 3 providers succeeded. Consensus may be less reliable.`)
     }
 
     return successfulResponses
@@ -125,6 +167,32 @@ export class CompanyResearchAgent {
     }
 
     return contextParts.join('. ')
+  }
+
+  /**
+   * Build context string from MCP web data
+   * Formats real-time web search results into LLM context
+   */
+  private buildWebDataContext(webData: Partial<EnrichedCompany>): string {
+    const parts: string[] = []
+
+    if (webData.employeeCount) {
+      parts.push(`${webData.employeeCount} employees`)
+    }
+
+    if (webData.annualRevenue) {
+      parts.push(`${webData.annualRevenue} revenue`)
+    }
+
+    if (webData.industry) {
+      parts.push(`${webData.industry} industry`)
+    }
+
+    if (webData.dataQuality) {
+      parts.push(`(${webData.dataQuality}% data quality)`)
+    }
+
+    return parts.join(', ')
   }
 
   /**
@@ -176,14 +244,12 @@ export class CompanyResearchAgent {
       this.claudeClient.testConnection(),
       this.openaiClient.testConnection(),
       this.geminiClient.testConnection(),
-      this.perplexityClient.testConnection(),
     ])
 
     return {
       Claude: testResults[0].status === 'fulfilled' && testResults[0].value,
       'GPT-4': testResults[1].status === 'fulfilled' && testResults[1].value,
       Gemini: testResults[2].status === 'fulfilled' && testResults[2].value,
-      Perplexity: testResults[3].status === 'fulfilled' && testResults[3].value,
     }
   }
 }
@@ -194,8 +260,7 @@ export class CompanyResearchAgent {
 export function createCompanyResearchAgent(
   claudeKey?: string,
   openaiKey?: string,
-  geminiKey?: string,
-  perplexityKey?: string
+  geminiKey?: string
 ): CompanyResearchAgent {
-  return new CompanyResearchAgent(claudeKey, openaiKey, geminiKey, perplexityKey)
+  return new CompanyResearchAgent(claudeKey, openaiKey, geminiKey)
 }

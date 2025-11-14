@@ -8,12 +8,11 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { batchJobQueue } from '@/lib/enrichment/batch-queue'
-import { formatApiError } from '@/lib/api/helpers'
 
 interface StatusRouteContext {
-  params: {
+  params: Promise<{
     jobId: string
-  }
+  }>
 }
 
 /**
@@ -25,15 +24,18 @@ export async function GET(
   context: StatusRouteContext
 ) {
   try {
-    const { jobId } = context.params
+    const { jobId } = await context.params
 
     if (!jobId) {
       return NextResponse.json(
-        formatApiError(
-          'Missing job ID',
-          'Provide job ID in URL path',
-          'Example: GET /api/enrichment/status/job_123456'
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'Missing job ID',
+            howToFix: 'Provide job ID in URL path',
+            exampleFormat: 'GET /api/enrichment/status/job_123456'
+          }
+        },
         { status: 400 }
       )
     }
@@ -43,11 +45,14 @@ export async function GET(
 
     if (!progress) {
       return NextResponse.json(
-        formatApiError(
-          'Job not found',
-          'Verify job ID is correct or check if job has been cleaned up',
-          `Example: Job ${jobId} may have completed and been removed from queue`
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'Job not found',
+            howToFix: 'Verify job ID is correct or check if job has been cleaned up',
+            exampleFormat: `Job ${jobId} may have completed and been removed from queue`
+          }
+        },
         { status: 404 }
       )
     }
@@ -77,11 +82,14 @@ export async function GET(
     console.error('Status polling API error:', error)
 
     return NextResponse.json(
-      formatApiError(
-        'Failed to retrieve job status',
-        'An unexpected error occurred while fetching job status',
-        'Example: Check server logs for detailed error information'
-      ),
+      {
+        success: false,
+        error: {
+          whatFailed: 'Failed to retrieve job status',
+          howToFix: 'An unexpected error occurred while fetching job status',
+          exampleFormat: 'Check server logs for detailed error information'
+        }
+      },
       { status: 500 }
     )
   }
@@ -96,15 +104,18 @@ export async function DELETE(
   context: StatusRouteContext
 ) {
   try {
-    const { jobId } = context.params
+    const { jobId } = await context.params
 
     if (!jobId) {
       return NextResponse.json(
-        formatApiError(
-          'Missing job ID',
-          'Provide job ID in URL path',
-          'Example: DELETE /api/enrichment/status/job_123456'
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'Missing job ID',
+            howToFix: 'Provide job ID in URL path',
+            exampleFormat: 'DELETE /api/enrichment/status/job_123456'
+          }
+        },
         { status: 400 }
       )
     }
@@ -113,11 +124,14 @@ export async function DELETE(
     const job = batchJobQueue.getJob(jobId)
     if (!job) {
       return NextResponse.json(
-        formatApiError(
-          'Job not found',
-          'Verify job ID is correct',
-          `Example: Job ${jobId} does not exist`
-        ),
+        {
+          success: false,
+          error: {
+            whatFailed: 'Job not found',
+            howToFix: 'Verify job ID is correct',
+            exampleFormat: `Job ${jobId} does not exist`
+          }
+        },
         { status: 404 }
       )
     }
@@ -135,22 +149,28 @@ export async function DELETE(
     }
 
     return NextResponse.json(
-      formatApiError(
-        'Failed to delete job',
-        'Job could not be removed from queue',
-        `Example: Job ${jobId} deletion failed`
-      ),
+      {
+        success: false,
+        error: {
+          whatFailed: 'Failed to delete job',
+          howToFix: 'Job could not be removed from queue',
+          exampleFormat: `Job ${jobId} deletion failed`
+        }
+      },
       { status: 500 }
     )
   } catch (error) {
     console.error('Job deletion API error:', error)
 
     return NextResponse.json(
-      formatApiError(
-        'Failed to delete job',
-        'An unexpected error occurred while deleting job',
-        'Example: Check server logs for detailed error information'
-      ),
+      {
+        success: false,
+        error: {
+          whatFailed: 'Failed to delete job',
+          howToFix: 'An unexpected error occurred while deleting job',
+          exampleFormat: 'Check server logs for detailed error information'
+        }
+      },
       { status: 500 }
     )
   }

@@ -107,13 +107,48 @@ export default function ManualInputPage() {
 
     setIsProcessing(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Create badge scans via API
+      const eventId = 'manual-entry-' + new Date().getFullYear()
+      const eventName = `Manual Entry ${new Date().getFullYear()}`
+
+      // First, ensure event exists
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: eventId, name: eventName }),
+      })
+
+      // Create badge scans
+      for (const row of validRows) {
+        const badgeScanData = {
+          eventId,
+          firstName: row.name.split(' ')[0] || row.name,
+          lastName: row.name.split(' ').slice(1).join(' ') || '',
+          email: row.email,
+          company: row.company,
+          jobTitle: row.title || 'Unknown',
+          phone: row.phone || '',
+          notes: row.notes || '',
+          scannedAt: new Date().toISOString(),
+        }
+
+        const response = await fetch('/api/badge-scans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(badgeScanData),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to save badge scan for ${row.name}`)
+        }
+      }
+
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
       setRows([])
     } catch (error) {
-      alert('Failed to process rows')
+      console.error('Error processing rows:', error)
+      alert(error instanceof Error ? error.message : 'Failed to process rows')
     } finally {
       setIsProcessing(false)
     }

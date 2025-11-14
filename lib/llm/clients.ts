@@ -28,7 +28,7 @@ export interface LLMError {
  */
 export class ClaudeClient {
   private client: Anthropic
-  private model = 'claude-3-7-sonnet-20250219'
+  private model = 'claude-sonnet-4-5-20250929'
 
   constructor(apiKey: string) {
     this.client = new Anthropic({ apiKey })
@@ -110,7 +110,7 @@ export class OpenAIClient {
  */
 export class GeminiClient {
   private client: GoogleGenerativeAI
-  private model = 'gemini-2.0-flash-exp'
+  private model = 'gemini-2.5-flash'
 
   constructor(apiKey: string) {
     this.client = new GoogleGenerativeAI(apiKey)
@@ -146,7 +146,7 @@ export class GeminiClient {
  */
 export class OpenRouterClient {
   private client: OpenAI
-  private model = 'anthropic/claude-3.5-sonnet'
+  private model = 'perplexity/sonar-pro'
 
   constructor(apiKey: string) {
     this.client = new OpenAI({

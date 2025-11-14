@@ -24,7 +24,6 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
   GOOGLE_AI_API_KEY: z.string().optional(),
-  PERPLEXITY_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
   CONTEXT7_APIKEY: z.string().optional(),
 
@@ -142,7 +141,6 @@ export function validateLLMApiKeys(): void {
   if (!config.ANTHROPIC_API_KEY) missingKeys.push('ANTHROPIC_API_KEY')
   if (!config.OPENAI_API_KEY) missingKeys.push('OPENAI_API_KEY')
   if (!config.GOOGLE_API_KEY) missingKeys.push('GOOGLE_API_KEY')
-  if (!config.PERPLEXITY_API_KEY) missingKeys.push('PERPLEXITY_API_KEY')
 
   if (isProduction() && missingKeys.length > 0) {
     throw new Error(
@@ -272,7 +270,6 @@ export function checkLLMProviders() {
     { name: 'anthropic', key: config.ANTHROPIC_API_KEY },
     { name: 'openai', key: config.OPENAI_API_KEY },
     { name: 'google', key: config.GOOGLE_API_KEY },
-    { name: 'perplexity', key: config.PERPLEXITY_API_KEY },
   ]
 
   const availableProviders = providers.filter(p => p.key).map(p => p.name)

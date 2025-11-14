@@ -30,6 +30,11 @@
 - Q: When processing very large CSV files (1000+ badge scans) that may exceed API rate limits or processing time constraints, what should the system do? → A: Process in chunks with progress persistence (user can pause/resume), showing estimated completion time
 - Q: How should the system behave when the storage backend becomes unavailable mid-processing? → A: Queue failed storage operations for retry with exponential backoff, continue processing with temporary in-memory storage, show warning banner to user
 
+### Session 2025-11-13
+
+- Q: What level of observability and monitoring should the system provide for operations teams? → A: Basic - Log enrichment attempts/failures, API usage metrics, storage operations with timestamps and error details
+- Q: What data privacy and retention policies should the system enforce for badge scan contact information? → A: Basic - Implement 2-year automatic data retention with user-triggered deletion, anonymize PII for analytics, include GDPR-compliant data export/deletion API
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Badge Scan Upload and Processing (Priority: P1)
@@ -83,6 +88,58 @@ A marketing operations manager wants to customize how leads are scored and categ
 
 ---
 
+### User Story 4 - Persona Type Management (Priority: P2)
+
+A marketing manager needs to define what types of companies and contacts their organization targets at trade shows. The system automatically generates three persona types (exhibitor profile, target company profile, target people profile) by analyzing the exhibitor's website, product pages, case studies, and existing materials. The marketing manager reviews these AI-generated personas and refines them to ensure accuracy before badge scan processing begins.
+
+**Why this priority**: Accurate persona definitions are essential for proper tier categorization and lead scoring. While P1 functionality can work with generic personas, production usage requires customized personas that reflect the exhibitor's specific target market. This comes before tagging/lists (P3) because scoring must be accurate before organizational features matter.
+
+**Independent Test**: Can be tested by triggering AI persona generation for a sample exhibitor company, verifying that the system scrapes relevant data from the website, generates three distinct persona types with appropriate fields, and allows the marketing manager to edit and save changes. Success is measured by comparing enrichment tier distributions before and after persona customization.
+
+**Acceptance Scenarios**:
+
+1. **Given** marketing manager initiates persona generation, **When** system analyzes exhibitor's website and materials, **Then** three persona documents are auto-generated (exhibitor, target company, target people) with populated criteria fields
+2. **Given** AI-generated personas are displayed, **When** marketing manager reviews content, **Then** they can edit any field in any persona type and save changes
+3. **Given** custom personas are saved, **When** badge scans are enriched, **Then** leads are scored against company persona criteria AND contact persona criteria independently
+4. **Given** marketing manager has existing industry knowledge, **When** editing personas, **Then** they can add case studies, competitor lists, pricing information, and MEDDIC decision-making role definitions
+
+---
+
+### User Story 5 - MEDDIC Qualification (Priority: P3)
+
+A sales manager reviewing enriched reports identifies a Hot tier company with multiple contacts but wants deeper intelligence on the decision-making unit. They trigger a "MEDDIC Deep Dive" analysis for this opportunity, which enriches the contacts with full MEDDIC framework scoring (Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion) and discovers additional decision makers who didn't attend the trade show but should be involved in the sales process.
+
+**Why this priority**: Basic enrichment and tiering (P1) provide sufficient intelligence for most follow-ups. MEDDIC deep-dive is an optional premium feature that sales teams use selectively for their most promising opportunities. It requires additional LLM resources and is most valuable after basic prioritization is complete.
+
+**Independent Test**: Can be tested by selecting a qualified lead (Tier 1 or Tier 2), triggering MEDDIC analysis, and verifying that the system generates scores for all six MEDDIC components, identifies key decision makers by role, discovers missing stakeholders through LinkedIn and company research, and provides actionable sales strategy recommendations. Success is measured by finding 3-5 additional decision makers per opportunity.
+
+**Acceptance Scenarios**:
+
+1. **Given** a Hot or Warm tier company, **When** sales manager clicks "Run MEDDIC Deep Dive", **Then** system enriches all contacts from that company with MEDDIC scores across 6 dimensions
+2. **Given** MEDDIC analysis is complete, **When** viewing company report, **Then** report displays Economic Buyer identification, Champion assessment, pain points, estimated deal metrics, and decision process timeline
+3. **Given** MEDDIC deep-dive discovers missing stakeholders, **When** report is generated, **Then** it lists decision makers who should be involved but did not attend (with names, titles, LinkedIn profiles where available)
+4. **Given** multiple contacts from same company are analyzed, **When** viewing decision-making unit map, **Then** system shows relationships, influence levels, and recommended engagement sequence
+
+---
+
+### User Story 6 - Tagging and List Management (Priority: P3)
+
+A marketing manager wants to organize enriched leads beyond the automatic tier categorization. They create custom tags (e.g., "Q1 Follow-up", "Demo Scheduled", "Partnership Opportunity") and apply them to specific contacts or companies. They also create lists for different purposes (e.g., "CXO Outreach - East Coast", "SMB Pipeline", "Event Follow-up Wave 2") to segment contacts for targeted campaigns or sales assignment. Lists can be static (manually curated) or dynamic (auto-populated based on filter criteria like tier, industry, company size).
+
+**Why this priority**: This is purely organizational functionality that enhances workflow efficiency but doesn't impact the core value proposition of enrichment and tier categorization. It's most valuable after teams have processed multiple events and need to manage larger volumes of contacts across campaigns.
+
+**Independent Test**: Can be tested by creating several custom tags, applying them to contacts individually and in bulk, creating both static and dynamic lists, and verifying that filtering/exporting works correctly with tag and list criteria. Success is measured by marketing manager being able to create and populate a list within 5 minutes.
+
+**Acceptance Scenarios**:
+
+1. **Given** marketing manager is viewing enriched contacts, **When** they create a new tag with custom name and color, **Then** tag appears in tag selector for all contacts
+2. **Given** tag is created, **When** marketing manager selects multiple contacts and applies tag, **Then** all selected contacts are tagged and filterable by that tag
+3. **Given** marketing manager creates a static list, **When** they add contacts manually, **Then** list membership is saved and contacts appear under that list view
+4. **Given** marketing manager creates a dynamic list with filter criteria (e.g., "Tier 1 + Technology industry + 100-500 employees"), **When** new contacts are enriched that match criteria, **Then** they automatically appear in the dynamic list
+5. **Given** lists and tags are configured, **When** generating reports, **Then** marketing manager can filter reports by specific tags or lists and export segmented contact sets
+
+---
+
 ### Edge Cases
 
 - What happens when the uploaded CSV file has missing or malformed data (e.g., invalid email format, missing company name)? System validates company names (minimum 2 characters, cannot be only numbers or special characters) before attempting enrichment and flags invalid entries for user review
@@ -91,6 +148,7 @@ A marketing operations manager wants to customize how leads are scored and categ
 - When storage backend becomes unavailable mid-processing, system queues failed storage operations for retry with exponential backoff, continues processing enrichment with temporary in-memory storage, and displays warning banner to user informing them of storage unavailability
 - When a lead matches multiple personas with equal fit scores, system assigns the lead to all matching personas and displays multi-persona indicator in reports
 - When duplicate badge scans are detected (same email address), system flags them and presents side-by-side comparison interface for user to review and select which instance(s) to keep
+- When badge scans occur within 15 seconds of each other at the same booth (proximity detection), system flags them as "potential associations" to identify consultants, transitioning employees, or joint meeting attendees who may not share email addresses but were scanned together
 - When CSV column headers use non-standard naming conventions, system provides intelligent column mapping with preview step where users can review and adjust detected mappings before processing
 
 ## Requirements *(mandatory)*
@@ -119,15 +177,78 @@ A marketing operations manager wants to customize how leads are scored and categ
 - **FR-017**: System MUST assign leads to all personas when multiple personas have equal fit scores and display multi-persona indicator in reports
 - **FR-018**: System MUST generate CRO_summary.md report containing executive summary (tier distribution, enrichment success rate, event metadata), top 10 Hot leads with key insights and contact details, and recommended follow-up priorities organized by tier
 - **FR-019**: System MUST generate individual company reports for each enriched lead containing company profile (size, industry, revenue, tech stack), persona match analysis with fit score breakdown, actionable insights (pain points and conversation starters), and tier assignment justification
+- **FR-020**: System MUST log all enrichment attempts and failures, API usage metrics, and storage operations with timestamps and error details to support troubleshooting and operational monitoring
+- **FR-021**: System MUST implement automatic data retention policy that deletes badge scan data and enriched profiles after 2 years from upload date, with user-triggered manual deletion available at any time
+- **FR-022**: System MUST provide GDPR-compliant data export API that returns all stored personal data for a given contact in machine-readable format (JSON)
+- **FR-023**: System MUST provide GDPR-compliant data deletion API that permanently removes all personal data for a given contact across all storage adapters
+- **FR-024**: System MUST anonymize personally identifiable information (name, email, phone) when aggregating analytics data for reporting purposes
+- **FR-025**: System MUST support three distinct persona types (Exhibitor Persona, Target Company Persona, Target People Persona) with type-specific criteria fields and matching logic, where Exhibitor Persona is auto-generated from website analysis and editable by marketing manager
+- **FR-026**: System MUST provide on-demand MEDDIC qualification analysis for selected contacts, calculating scores across six dimensions (Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion) and identifying missing decision makers in the buying committee
+- **FR-027**: System MUST support four report types (CRO Summary, Company Summary, Contact Summary, Merged Report) with distinct structures and content formats tailored to different stakeholder needs
+- **FR-028**: System MUST generate reports asynchronously with job queue management, status tracking, progress indicators, and user notifications when reports are ready for download
+- **FR-029**: System MUST provide tag management functionality allowing marketing managers to create custom tags with names and colors, apply tags to contacts individually or in bulk, and filter reports by tag criteria
+- **FR-030**: System MUST support list creation and management with both static (manually curated) and dynamic (filter-based auto-population) list types, allowing contacts to belong to multiple lists simultaneously
+- **FR-031**: System MUST detect badge scans occurring within 15-second proximity window and flag them as "potential associations" to identify consultants, joint meeting attendees, or transitioning employees, displaying LOW confidence level requiring manual review
+- **FR-032**: System MUST implement dual tiering with independent Company Tier (based on company persona match) and Contact Tier (based on people persona match), then calculate Combined Tier indicator (Hot/Warm/Cold) using weighted algorithm that prioritizes company tier (60% weight) and contact tier (40% weight)
 
 ### Key Entities
 
-- **Badge Scan**: Represents raw contact data from trade show badge scan export, including name, email, company name, job title, phone number, and event metadata (event name, scan timestamp, booth location)
-- **Enriched Company**: Extended company profile created by combining badge scan data with external intelligence sources, containing company size, employee count, industry classification, annual revenue range, technology stack, funding information, and social media presence
-- **Business Persona**: Ideal customer profile definition used for lead scoring, containing criteria such as target company size range, preferred industries, required technologies, budget indicators, geographic preferences, and decision-maker role requirements
-- **Lead Tier**: Categorization label (Hot, Warm, Cold, Unscored) assigned to each badge scan based on percentage match to persona criteria (Hot: >=70% criteria met, Warm: 40-69% criteria met, Cold: <40% criteria met, Unscored: <30% data coverage or enrichment failed), determining follow-up priority
-- **Report**: Generated document containing organized view of enriched badge scans grouped by tier, with filtering, sorting, and export capabilities
+- **Badge Scan**: Represents raw contact data from trade show badge scan export, including name, email, company name, job title, phone number, event metadata (event name, scan timestamp, booth location), proximity group ID for association detection, and Contact Tier assignment
+- **Enriched Company**: Extended company profile created by combining badge scan data with external intelligence sources, containing company size, employee count, industry classification, annual revenue range, technology stack, funding information, social media presence, and Company Tier assignment (aggregated from all associated contacts)
+- **Business Persona**: Ideal customer profile definition used for lead scoring, now supporting three types (Exhibitor, Target Company, Target People) with type-specific criteria fields. Exhibitor Persona is auto-generated from website scraping and editable. Target Company Persona contains firmographic criteria (size, industry, revenue, tech stack). Target People Persona contains role/seniority criteria and MEDDIC decision-making roles
+- **Company Tier**: Tier assignment (Hot, Warm, Cold, Unscored) for a company entity based on match to Target Company Persona, calculated as percentage of company criteria met (Hot: >=70%, Warm: 40-69%, Cold: <40%, Unscored: <30% data coverage)
+- **Contact Tier**: Tier assignment (Hot, Warm, Cold, Unscored) for an individual contact based on match to Target People Persona, calculated as percentage of people criteria met (same thresholds as Company Tier)
+- **Combined Tier**: Final prioritization indicator (Hot, Warm, Cold) combining Company Tier (60% weight) and Contact Tier (40% weight) to determine overall follow-up priority
+- **MEDDIC Score**: On-demand qualification analysis containing scores across six dimensions (Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion), overall qualification status, identified missing decision makers, and recommended engagement strategy
+- **Tag**: User-defined label with name and color used to categorize contacts for organizational purposes (e.g., "Q1 Follow-up", "Demo Scheduled")
+- **List**: Collection of contacts organized for campaign or sales assignment purposes, supporting static (manual) and dynamic (filter-based) membership types
+- **Report**: Generated document containing organized view of enriched badge scans, now supporting four types (CRO Summary, Company Summary, Contact Summary, Merged Report) with async generation, status tracking, and download notifications
+- **Report Job**: Asynchronous report generation task with queue management, progress tracking (0-100%), estimated completion time, and status (Queued, Generating, Completed, Failed)
 - **Storage Adapter Configuration**: Settings that define which backend storage system is active and connection parameters (file paths, database credentials, API keys)
+
+## Assumptions
+
+### Persona Generation and Management
+- Exhibitor website contains sufficient public information (about page, product pages, case studies) to generate meaningful persona criteria via AI scraping
+- Marketing managers have domain expertise to review and refine AI-generated personas for accuracy
+- Persona criteria are relatively stable across events and do not require regeneration for each trade show
+- Target Company and Target People personas can be manually defined or imported from existing ICP (Ideal Customer Profile) documentation
+
+### Dual Tiering System
+- Company tier weight (60%) is prioritized over contact tier weight (40%) because companies with budget are more valuable than individual contacts without budget authority
+- Hot/Warm/Cold terminology will replace Tier 1/2/3 in UI for consistency with existing sales terminology
+- Unscored tier applies when either company or contact data coverage is below 30% threshold
+- Combined tier calculation uses simple weighted average: (Company Tier Score × 0.6) + (Contact Tier Score × 0.4)
+
+### MEDDIC Deep-Dive
+- MEDDIC analysis requires additional LLM API calls and is cost-prohibitive to run on all contacts automatically
+- Sales teams primarily need MEDDIC analysis for qualified opportunities (Tier 1-2) rather than all contacts
+- LinkedIn and company website research can identify missing decision makers 70-80% of the time
+- MEDDIC scores are snapshots and may become stale as opportunities progress (manual refresh available)
+
+### Proximity Detection
+- 15-second window is reasonable threshold for detecting joint meetings or associated attendees
+- Scanner ID field is included in CSV exports from trade show badge systems (most modern systems support this)
+- Proximity detection produces 20-30% false positives (booth staff scanning rapidly, unrelated attendees in queue) requiring manual review
+- LOW confidence flag discourages automatic actions and encourages human validation
+
+### Tagging and Lists
+- Marketing managers prefer flexible, user-defined organizational systems over rigid predefined categories
+- Dynamic lists (filter-based) refresh automatically when new contacts are enriched matching criteria
+- Contacts can belong to unlimited number of tags and lists simultaneously (many-to-many relationship)
+- Tag colors improve visual scanning efficiency in reports and dashboards
+
+### Report Generation
+- Async report generation is necessary because reports with 500+ enriched contacts take 2-5 minutes to generate
+- Marketing managers tolerate 5-minute report generation wait time if they can continue other work (not blocking)
+- Email or in-app notifications are sufficient for report completion alerts (no SMS required)
+- CRO Summary report is the most frequently accessed report type (60% of usage), followed by individual company reports (30%), with other types used occasionally (10%)
+
+### Storage and Data Retention
+- 2-year retention policy complies with common GDPR and data privacy regulations for B2B sales data
+- HubSpot adapter integration assumes exhibitor has existing HubSpot account and API access
+- Local storage is sufficient for proof-of-concept but MySQL or HubSpot required for production multi-user environments
+- Badge scan data typically ranges from 50-500 contacts per event for most exhibitors
 
 ## Success Criteria *(mandatory)*
 
@@ -143,3 +264,8 @@ A marketing operations manager wants to customize how leads are scored and categ
 - **SC-008**: Report filtering and search operations return results in under 2 seconds for datasets with up to 500 enriched leads
 - **SC-009**: Exported reports (CSV/PDF) contain all enriched data fields and are compatible with standard CRM import formats
 - **SC-010**: System provides actionable error messages (specifying what failed, how to fix, and example of correct format) that allow users to correct and re-upload invalid CSV files without technical support
+- **SC-011**: Marketing managers can generate all three persona types (exhibitor, target company, target people) within 15 minutes using AI-assisted generation, with at least 80% of generated criteria requiring no edits
+- **SC-012**: Marketing managers can create custom tags, apply them to contacts, and create filtered lists within 5 minutes, with tag and list operations executing in under 1 second
+- **SC-013**: MEDDIC deep-dive analysis identifies 3-5 additional decision makers per qualified opportunity (Tier 1-2 companies) who did not attend the trade show but should be involved in sales process
+- **SC-014**: Dual tier system (company tier + contact tier + combined indicator) enables sales teams to prioritize leads 40% faster compared to single-tier system, measured by time-to-first-contact for Hot tier leads
+- **SC-015**: Proximity detection identifies 5-10% additional meeting attendees or business relationships not captured by email-based duplicate detection, improving lead context accuracy

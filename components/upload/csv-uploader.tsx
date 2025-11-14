@@ -14,29 +14,20 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
-import type { CSVValidationError, ColumnMapping } from '@/lib/types'
+import type { CSVValidationError, CSVUploadPreview } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 
-export interface CSVUploadResult {
-  headers: string[]
-  sampleRows: Record<string, string>[]
-  detectedMappings: ColumnMapping[]
-  unmappedColumns: string[]
-  confidence: 'high' | 'medium' | 'low'
-  totalRows: number
-  validRows: number
-  fileName: string
-  fileSize: number
-}
+// Re-export for backward compatibility with dashboard
+export type CSVUploadResult = CSVUploadPreview
 
 export interface CSVUploaderProps {
   eventId: string
   eventName: string
-  onUploadSuccess: (result: CSVUploadResult) => void
+  onUploadSuccess: (preview: CSVUploadPreview, file: File) => void
   onUploadError?: (error: CSVValidationError) => void
   maxSizeMB?: number
 }
@@ -186,7 +177,7 @@ export function CSVUploader({
 
       // Success
       setSuccess(true)
-      onUploadSuccess(result.data)
+      onUploadSuccess(result.data, selectedFile)
     } catch (err) {
       const error: CSVValidationError = {
         row: 0,

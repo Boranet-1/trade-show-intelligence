@@ -22,7 +22,7 @@ export async function GET() {
       message: 'Application initialized successfully',
     })
   } catch (error) {
-    logger.error('Application initialization failed:', error)
+    logger.error('Application initialization failed:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {

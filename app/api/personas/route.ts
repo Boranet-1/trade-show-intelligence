@@ -30,7 +30,7 @@ export async function GET(): Promise<NextResponse<APISuccessResponse<Persona[]> 
       data: personas,
     })
   } catch (error) {
-    logger.error('Failed to retrieve personas:', error)
+    logger.error('Failed to retrieve personas:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<APISucces
                 fundingStage: 0.05,
               },
             }, null, 2),
-            details: validation.error.errors,
+            details: validation.error.issues,
           },
         },
         { status: 400 }
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<APISucces
       { status: 201 }
     )
   } catch (error) {
-    logger.error('Failed to create persona:', error)
+    logger.error('Failed to create persona:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {
@@ -327,7 +327,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse<APISuccess
       data: { message: 'Persona updated successfully' },
     })
   } catch (error) {
-    logger.error('Failed to update persona:', error)
+    logger.error('Failed to update persona:', error instanceof Error ? error : undefined)
 
     return NextResponse.json(
       {
