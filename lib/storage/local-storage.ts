@@ -48,6 +48,8 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
       path.join(this.dataDir, 'matches'),
       path.join(this.dataDir, 'reports'),
       path.join(this.dataDir, 'events'),
+      path.join(this.dataDir, 'lists'),
+      path.join(this.dataDir, 'tags'),
       path.join(this.dataDir, 'configs'),
     ]
 
@@ -452,12 +454,37 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
     let totalFitScore = 0
     let scoredCount = 0
 
+    // FR-032: Dual-tier statistics
+    let companyHot = 0, companyWarm = 0, companyCold = 0, companyUnscored = 0
+    let contactHot = 0, contactWarm = 0, contactCold = 0, contactUnscored = 0
+    let combinedHot = 0, combinedWarm = 0, combinedCold = 0, combinedUnscored = 0
+
     for (const scan of scans) {
       const enriched = await this.getEnrichedCompany(scan.id)
       if (enriched) {
         enrichedCount++
         if (enriched.industry) {
           industryCount.set(enriched.industry, (industryCount.get(enriched.industry) || 0) + 1)
+        }
+
+        // FR-032: Count company tiers
+        if (enriched.companyTier) {
+          switch (enriched.companyTier) {
+            case 'Hot': companyHot++; break
+            case 'Warm': companyWarm++; break
+            case 'Cold': companyCold++; break
+            case 'Unscored': companyUnscored++; break
+          }
+        }
+      }
+
+      // FR-032: Count contact tiers
+      if (scan.contactTier) {
+        switch (scan.contactTier) {
+          case 'Hot': contactHot++; break
+          case 'Warm': contactWarm++; break
+          case 'Cold': contactCold++; break
+          case 'Unscored': contactUnscored++; break
         }
       }
 
@@ -483,6 +510,20 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
       } else {
         unscoredCount++
       }
+
+      // FR-032: Count combined tiers (calculated from persona matches or stored separately)
+      // For now, we'll use the best match tier as the combined tier
+      // In a full implementation, you might store CombinedTierCalculation separately
+      if (bestMatch) {
+        switch (bestMatch.tier) {
+          case 'Hot': combinedHot++; break
+          case 'Warm': combinedWarm++; break
+          case 'Cold': combinedCold++; break
+          case 'Unscored': combinedUnscored++; break
+        }
+      } else {
+        combinedUnscored++
+      }
     }
 
     const topIndustries = Array.from(industryCount.entries())
@@ -500,6 +541,25 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
       topIndustries,
       averageFitScore: scoredCount > 0 ? totalFitScore / scoredCount : 0,
       enrichmentSuccessRate: scans.length > 0 ? (enrichedCount / scans.length) * 100 : 0,
+      // FR-032: Include dual-tier breakdowns
+      companyTierBreakdown: {
+        hot: companyHot,
+        warm: companyWarm,
+        cold: companyCold,
+        unscored: companyUnscored,
+      },
+      contactTierBreakdown: {
+        hot: contactHot,
+        warm: contactWarm,
+        cold: contactCold,
+        unscored: contactUnscored,
+      },
+      combinedTierBreakdown: {
+        hot: combinedHot,
+        warm: combinedWarm,
+        cold: combinedCold,
+        unscored: combinedUnscored,
+      },
     }
   }
 
@@ -519,6 +579,70 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
 
   async getAllEvents(): Promise<Event[]> {
     return this.readAllJSON<Event>(path.join(this.dataDir, 'events'))
+  }
+
+  // ===== List Operations (FR-030) =====
+
+  async saveList(list: List): Promise<string> {
+    await this.initializeDirectories()
+    const filePath = path.join(this.dataDir, 'lists', `${list.id}.json`)
+    await this.writeJSON(filePath, list)
+    return list.id
+  }
+
+  async getList(listId: string): Promise<List | null> {
+    const filePath = path.join(this.dataDir, 'lists', `${listId}.json`)
+    return this.readJSON<List>(filePath)
+  }
+
+  async getAllLists(): Promise<List[]> {
+    return this.readAllJSON<List>(path.join(this.dataDir, 'lists'))
+  }
+
+  async updateList(listId: string, updates: Partial<List>): Promise<void> {
+    const list = await this.getList(listId)
+    if (!list) {
+      throw new Error(`List with ID ${listId} not found`)
+    }
+    const updatedList = { ...list, ...updates, lastUpdated: new Date() }
+    await this.saveList(updatedList)
+  }
+
+  async deleteList(listId: string): Promise<void> {
+    const filePath = path.join(this.dataDir, 'lists', `${listId}.json`)
+    await fs.unlink(filePath)
+  }
+
+  // ===== Tag Operations (FR-029) =====
+
+  async saveTag(tag: Tag): Promise<string> {
+    await this.initializeDirectories()
+    const filePath = path.join(this.dataDir, 'tags', `${tag.id}.json`)
+    await this.writeJSON(filePath, tag)
+    return tag.id
+  }
+
+  async getTag(tagId: string): Promise<Tag | null> {
+    const filePath = path.join(this.dataDir, 'tags', `${tagId}.json`)
+    return this.readJSON<Tag>(filePath)
+  }
+
+  async getAllTags(): Promise<Tag[]> {
+    return this.readAllJSON<Tag>(path.join(this.dataDir, 'tags'))
+  }
+
+  async updateTag(tagId: string, updates: Partial<Tag>): Promise<void> {
+    const tag = await this.getTag(tagId)
+    if (!tag) {
+      throw new Error(`Tag with ID ${tagId} not found`)
+    }
+    const updatedTag = { ...tag, ...updates }
+    await this.saveTag(updatedTag)
+  }
+
+  async deleteTag(tagId: string): Promise<void> {
+    const filePath = path.join(this.dataDir, 'tags', `${tagId}.json`)
+    await fs.unlink(filePath)
   }
 
   // ===== Configuration Operations =====

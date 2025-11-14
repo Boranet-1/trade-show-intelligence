@@ -11,6 +11,7 @@ import { getStorageAdapter } from '@/lib/storage'
 import { errorResponse, successResponse } from '@/lib/api/helpers'
 import { AppError, ValidationError } from '@/lib/errors'
 import type { CSVUploadResult, ColumnMapping } from '@/lib/types'
+import { detectProximityGroups, assignProximityGroupIds } from '@/lib/detection/proximity-detector'
 
 /**
  * POST /api/upload/confirm
@@ -139,6 +140,27 @@ export async function POST(request: NextRequest) {
       await storage.flagDuplicate(newScanId, originalId)
     }
 
+    // FR-031: Detect proximity groups after upload
+    const allScans = await storage.getAllBadgeScans(eventId)
+    const proximityGroups = detectProximityGroups(allScans)
+
+    // Save proximity groups to storage
+    if (proximityGroups.length > 0) {
+      for (const group of proximityGroups) {
+        await storage.saveProximityGroup(group)
+      }
+
+      // Assign proximity group IDs to badge scans
+      const scansWithGroups = assignProximityGroupIds(allScans, proximityGroups)
+
+      // Update badge scans with proximity group IDs
+      for (const scan of scansWithGroups) {
+        if (scan.proximityGroupId) {
+          await storage.updateBadgeScan(scan.id, { proximityGroupId: scan.proximityGroupId })
+        }
+      }
+    }
+
     // Build final result
     const result: CSVUploadResult = {
       success: true,
@@ -152,6 +174,8 @@ export async function POST(request: NextRequest) {
         duplicateCount: d.existingScans.length,
         existingScanIds: d.existingScans.map(s => s.id),
       })) : undefined,
+      // FR-031: Include proximity detection results
+      proximityGroupsDetected: proximityGroups.length,
     }
 
     return successResponse(result)

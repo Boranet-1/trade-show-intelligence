@@ -219,6 +219,25 @@ export interface ReportStatistics {
   topIndustries: { industry: string; count: number }[]
   averageFitScore: number
   enrichmentSuccessRate: number
+  // FR-032: Dual-tier statistics
+  companyTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
+  contactTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
+  combinedTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
 }
 
 export interface Event {
@@ -480,6 +499,8 @@ export interface CSVUploadResult {
     duplicateCount: number
     existingScanIds: string[]
   }>
+  // FR-031: Proximity detection results
+  proximityGroupsDetected?: number
 }
 
 // ===== LLM and Enrichment Types =====

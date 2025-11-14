@@ -25,6 +25,10 @@ export interface EnrichmentResult {
   status: EnrichmentStatus
   error?: string
   processedAt: Date
+  // FR-032: Dual-tier calculation results
+  companyTier?: string
+  contactTier?: string
+  combinedTierCalculation?: import('@/lib/types').CombinedTierCalculation
 }
 
 export interface OrchestratorConfig {
@@ -97,6 +101,10 @@ export class EnrichmentOrchestrator {
         actionableInsights: painPointAnalysis,
         status: 'ENRICHED',
         processedAt: new Date(),
+        // FR-032: Include dual-tier calculation results
+        companyTier: personaMatchingResult.companyTier,
+        contactTier: personaMatchingResult.contactTier,
+        combinedTierCalculation: personaMatchingResult.combinedTierCalculation,
       }
 
       this.log(`Enrichment completed for badge scan ${badgeScan.id} with tier ${result.assignedTier}`)

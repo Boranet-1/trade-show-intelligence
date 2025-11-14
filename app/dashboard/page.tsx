@@ -376,6 +376,12 @@ export default function DashboardPage() {
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                   <AlertDescription>
                     Successfully processed {badgeScanIds.length} badge scans. Your leads have been scored and categorized by tier.
+                    {uploadResult?.proximityGroupsDetected && uploadResult.proximityGroupsDetected > 0 && (
+                      <div className="mt-2 pt-2 border-t">
+                        <strong>Proximity Detection (FR-031):</strong> {uploadResult.proximityGroupsDetected} group{uploadResult.proximityGroupsDetected > 1 ? 's' : ''} detected
+                        (contacts scanned within 15 seconds)
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
 
@@ -453,6 +459,12 @@ export default function DashboardPage() {
                 <Link href="/input">
                   <Upload className="h-4 w-4 mr-2" />
                   Manual Input
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full justify-start">
+                <Link href="/settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Tags & Lists
                 </Link>
               </Button>
             </CardContent>

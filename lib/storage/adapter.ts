@@ -21,6 +21,8 @@ import type {
   ReportFilters,
   ExportedData,
   ExportFormat,
+  List,
+  Tag,
 } from '@/lib/types'
 
 /**
@@ -227,6 +229,80 @@ export interface StorageAdapter {
    */
   getAllEvents(): Promise<Event[]>
 
+  // ===== List Operations (FR-030) =====
+
+  /**
+   * Save list
+   * @param list - List record
+   * @returns Promise resolving to list ID (UUID)
+   */
+  saveList(list: List): Promise<string>
+
+  /**
+   * Retrieve list by ID
+   * @param listId - List UUID
+   * @returns Promise resolving to list or null if not found
+   */
+  getList(listId: string): Promise<List | null>
+
+  /**
+   * Retrieve all lists
+   * @returns Promise resolving to array of lists
+   */
+  getAllLists(): Promise<List[]>
+
+  /**
+   * Update existing list
+   * @param listId - List UUID
+   * @param updates - Partial list data to update
+   * @returns Promise resolving when update complete
+   */
+  updateList(listId: string, updates: Partial<List>): Promise<void>
+
+  /**
+   * Delete list
+   * @param listId - List UUID
+   * @returns Promise resolving when deletion complete
+   */
+  deleteList(listId: string): Promise<void>
+
+  // ===== Tag Operations (FR-029) =====
+
+  /**
+   * Save tag
+   * @param tag - Tag record
+   * @returns Promise resolving to tag ID (UUID)
+   */
+  saveTag(tag: Tag): Promise<string>
+
+  /**
+   * Retrieve tag by ID
+   * @param tagId - Tag UUID
+   * @returns Promise resolving to tag or null if not found
+   */
+  getTag(tagId: string): Promise<Tag | null>
+
+  /**
+   * Retrieve all tags
+   * @returns Promise resolving to array of tags
+   */
+  getAllTags(): Promise<Tag[]>
+
+  /**
+   * Update existing tag
+   * @param tagId - Tag UUID
+   * @param updates - Partial tag data to update
+   * @returns Promise resolving when update complete
+   */
+  updateTag(tagId: string, updates: Partial<Tag>): Promise<void>
+
+  /**
+   * Delete tag
+   * @param tagId - Tag UUID
+   * @returns Promise resolving when deletion complete
+   */
+  deleteTag(tagId: string): Promise<void>
+
   // ===== Configuration Operations =====
 
   /**
@@ -344,6 +420,18 @@ export abstract class BaseStorageAdapter implements StorageAdapter {
   abstract saveEvent(event: Event): Promise<string>
   abstract getEvent(eventId: string): Promise<Event | null>
   abstract getAllEvents(): Promise<Event[]>
+
+  abstract saveList(list: List): Promise<string>
+  abstract getList(listId: string): Promise<List | null>
+  abstract getAllLists(): Promise<List[]>
+  abstract updateList(listId: string, updates: Partial<List>): Promise<void>
+  abstract deleteList(listId: string): Promise<void>
+
+  abstract saveTag(tag: Tag): Promise<string>
+  abstract getTag(tagId: string): Promise<Tag | null>
+  abstract getAllTags(): Promise<Tag[]>
+  abstract updateTag(tagId: string, updates: Partial<Tag>): Promise<void>
+  abstract deleteTag(tagId: string): Promise<void>
 
   abstract saveStorageConfig(config: StorageAdapterConfiguration): Promise<string>
   abstract getActiveStorageConfig(): Promise<StorageAdapterConfiguration>

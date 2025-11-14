@@ -269,7 +269,20 @@ async function processBatchEnrichment(
             consensusMetadata: result.enrichedCompany.consensusMetadata ?? {},
             enrichedAt: result.enrichedCompany.enrichedAt ?? new Date(),
             dataSource: result.enrichedCompany.dataSource ?? [],
+            // FR-032: Save company tier
+            companyTier: result.companyTier,
           } as any)
+        }
+
+        // FR-032: Save contact tier to badge scan
+        if (result.contactTier) {
+          await storage.updateBadgeScan(scan.id, { contactTier: result.contactTier })
+        }
+
+        // FR-032: Save combined tier calculation if available
+        if (result.combinedTierCalculation) {
+          // Save to storage (this would require adding a new storage method)
+          // For now, we'll store it as part of the persona match or create a new storage method
         }
 
         // Save persona matches

@@ -2,6 +2,8 @@
  * Persona Matcher Sub-Agent
  * Specialized agent for calculating fit scores and assigning lead tiers
  * Part of the hub-and-spoke architecture (Constitution VI)
+ *
+ * FR-032: Implements dual-tier calculation (Company Tier + Contact Tier = Combined Tier)
  */
 
 import type {
@@ -11,12 +13,18 @@ import type {
   LeadTier,
   CriteriaMatch,
   BadgeScan,
+  CombinedTierCalculation,
 } from '@/lib/types'
+import { calculateCombinedTier, getTierFromPercentage } from '@/lib/scoring/dual-tier-calculator'
 
 export interface PersonaMatchingResult {
   personaMatches: PersonaMatch[]
   bestMatch: PersonaMatch | null
   assignedTier: LeadTier
+  // FR-032: Dual-tier calculation results
+  companyTier?: LeadTier
+  contactTier?: LeadTier
+  combinedTierCalculation?: CombinedTierCalculation
 }
 
 export class PersonaMatcherAgent {
@@ -44,10 +52,35 @@ export class PersonaMatcherAgent {
 
     const assignedTier = bestMatch ? bestMatch.tier : 'Unscored'
 
+    // FR-032: Calculate company tier, contact tier, and combined tier
+    let companyTier: LeadTier | undefined
+    let contactTier: LeadTier | undefined
+    let combinedTierCalculation: CombinedTierCalculation | undefined
+
+    if (bestMatch) {
+      const persona = personas.find(p => p.id === bestMatch.personaId)!
+
+      // Calculate company tier (company-level criteria only)
+      const companyFitScore = this.calculateCompanyFitScore(enrichedCompany, persona)
+      const dataCoveragePercent = this.calculateDataCoverage(enrichedCompany, persona)
+      companyTier = getTierFromPercentage(companyFitScore, dataCoveragePercent)
+
+      // Calculate contact tier (contact-level criteria only)
+      const contactFitScore = this.calculateContactFitScore(badgeScan, persona)
+      const contactDataCoverage = this.calculateContactDataCoverage(badgeScan, persona)
+      contactTier = getTierFromPercentage(contactFitScore, contactDataCoverage)
+
+      // Calculate combined tier (60% company + 40% contact)
+      combinedTierCalculation = calculateCombinedTier(badgeScan.id, companyTier, contactTier)
+    }
+
     return {
       personaMatches,
       bestMatch,
       assignedTier,
+      companyTier,
+      contactTier,
+      combinedTierCalculation,
     }
   }
 
@@ -457,6 +490,94 @@ export class PersonaMatcherAgent {
    */
   private generatePersonaMatchId(): string {
     return `match-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  /**
+   * FR-032: Calculate company fit score (company-level criteria only)
+   * Includes: company size, industry, technology, revenue, geography, funding stage
+   */
+  private calculateCompanyFitScore(enrichedCompany: Partial<EnrichedCompany>, persona: Persona): number {
+    let totalWeight = 0
+    let weightedScore = 0
+
+    // Company size
+    if (persona.criteria.companySizeRange && persona.weights.companySize > 0) {
+      totalWeight += persona.weights.companySize
+      const match = this.evaluateCompanySize(enrichedCompany, persona.criteria.companySizeRange, persona.weights.companySize)
+      weightedScore += match.contributionToScore
+    }
+
+    // Industry
+    if (persona.criteria.industries && persona.criteria.industries.length > 0 && persona.weights.industry > 0) {
+      totalWeight += persona.weights.industry
+      const match = this.evaluateIndustry(enrichedCompany, persona.criteria.industries, persona.weights.industry)
+      weightedScore += match.contributionToScore
+    }
+
+    // Technology
+    if (persona.criteria.technologies && persona.criteria.technologies.length > 0 && persona.weights.technology > 0) {
+      totalWeight += persona.weights.technology
+      const match = this.evaluateTechnology(enrichedCompany, persona.criteria.technologies, persona.weights.technology)
+      weightedScore += match.contributionToScore
+    }
+
+    // Revenue
+    if (persona.criteria.revenueRange && persona.weights.revenue > 0) {
+      totalWeight += persona.weights.revenue
+      const match = this.evaluateRevenue(enrichedCompany, persona.criteria.revenueRange, persona.weights.revenue)
+      weightedScore += match.contributionToScore
+    }
+
+    // Geography
+    if (persona.criteria.geographies && persona.criteria.geographies.length > 0 && persona.weights.geography > 0) {
+      totalWeight += persona.weights.geography
+      const match = this.evaluateGeography(enrichedCompany, persona.criteria.geographies, persona.weights.geography)
+      weightedScore += match.contributionToScore
+    }
+
+    // Funding stage
+    if (persona.criteria.fundingStages && persona.criteria.fundingStages.length > 0 && persona.weights.fundingStage > 0) {
+      totalWeight += persona.weights.fundingStage
+      const match = this.evaluateFundingStage(enrichedCompany, persona.criteria.fundingStages, persona.weights.fundingStage)
+      weightedScore += match.contributionToScore
+    }
+
+    return totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0
+  }
+
+  /**
+   * FR-032: Calculate contact fit score (contact-level criteria only)
+   * Includes: decision maker title
+   */
+  private calculateContactFitScore(badgeScan: BadgeScan, persona: Persona): number {
+    let totalWeight = 0
+    let weightedScore = 0
+
+    // Decision maker
+    if (persona.criteria.decisionMakerTitles && persona.criteria.decisionMakerTitles.length > 0 && persona.weights.decisionMaker > 0) {
+      totalWeight += persona.weights.decisionMaker
+      const match = this.evaluateDecisionMaker(badgeScan, persona.criteria.decisionMakerTitles, persona.weights.decisionMaker)
+      weightedScore += match.contributionToScore
+    }
+
+    return totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0
+  }
+
+  /**
+   * FR-032: Calculate contact data coverage (% of contact criteria with data)
+   */
+  private calculateContactDataCoverage(badgeScan: BadgeScan, persona: Persona): number {
+    let totalWeight = 0
+    let weightWithData = 0
+
+    if (persona.criteria.decisionMakerTitles && persona.criteria.decisionMakerTitles.length > 0) {
+      totalWeight += persona.weights.decisionMaker
+      if (badgeScan.jobTitle) {
+        weightWithData += persona.weights.decisionMaker
+      }
+    }
+
+    return totalWeight > 0 ? (weightWithData / totalWeight) * 100 : 100
   }
 }
 

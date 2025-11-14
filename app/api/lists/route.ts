@@ -1,31 +1,29 @@
 /**
- * FR-029: Tag Management API
- * Create and list tags
+ * Lists API Route (FR-030)
+ * Manages list creation and retrieval
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { Tag, APIResponse } from '@/lib/types'
+import { List, APIResponse } from '@/lib/types'
 import { getStorageAdapter } from '@/lib/storage/factory'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function GET(request: NextRequest) {
   try {
     const storage = await getStorageAdapter()
+    const lists = await storage.getAllLists()
 
-    // Get all tags (this method needs to be added to storage adapter)
-    const tags = await storage.getAllTags()
-
-    return NextResponse.json<APIResponse<Tag[]>>({
+    return NextResponse.json<APIResponse<List[]>>({
       success: true,
-      data: tags,
+      data: lists,
     })
   } catch (error) {
-    console.error('Failed to fetch tags:', error)
+    console.error('Failed to fetch lists:', error)
     return NextResponse.json<APIResponse>(
       {
         success: false,
         error: {
-          whatFailed: 'Failed to fetch tags',
+          whatFailed: 'Failed to fetch lists',
           howToFix: 'Check storage adapter connection and try again',
           details: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -38,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, color, description } = body
+    const { name, description, type, filterCriteria, badgeScanIds } = body
 
     // Validation
     if (!name || typeof name !== 'string') {
@@ -46,23 +44,23 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            whatFailed: 'Invalid tag name',
-            howToFix: 'Provide a valid tag name (non-empty string)',
-            exampleFormat: '{"name": "Q1 Follow-up", "color": "#FF5733"}',
+            whatFailed: 'Invalid list name',
+            howToFix: 'Provide a valid list name (non-empty string)',
+            exampleFormat: '{"name": "VIP Contacts", "type": "static"}',
           },
         },
         { status: 400 }
       )
     }
 
-    if (!color || typeof color !== 'string' || !color.match(/^#[0-9A-Fa-f]{6}$/)) {
+    if (!type || (type !== 'static' && type !== 'dynamic')) {
       return NextResponse.json<APIResponse>(
         {
           success: false,
           error: {
-            whatFailed: 'Invalid color format',
-            howToFix: 'Provide a valid hex color code',
-            exampleFormat: '{"name": "Tag Name", "color": "#FF5733"}',
+            whatFailed: 'Invalid list type',
+            howToFix: 'List type must be either "static" or "dynamic"',
+            exampleFormat: '{"name": "Hot Leads", "type": "dynamic"}',
           },
         },
         { status: 400 }
@@ -71,10 +69,10 @@ export async function POST(request: NextRequest) {
 
     const storage = await getStorageAdapter()
 
-    // Check for duplicate tag names
-    const existingTags = await storage.getAllTags()
-    const duplicate = existingTags.find(
-      (t) => t.name.toLowerCase() === name.toLowerCase()
+    // Check for duplicate list names
+    const existingLists = await storage.getAllLists()
+    const duplicate = existingLists.find(
+      (l) => l.name.toLowerCase() === name.toLowerCase()
     )
 
     if (duplicate) {
@@ -82,40 +80,44 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            whatFailed: 'Tag name already exists',
-            howToFix: 'Choose a different tag name or update the existing tag',
-            details: `Tag "${name}" already exists with ID ${duplicate.id}`,
+            whatFailed: 'List name already exists',
+            howToFix: 'Choose a different list name or update the existing list',
+            details: `List "${name}" already exists with ID ${duplicate.id}`,
           },
         },
         { status: 409 }
       )
     }
 
-    const tag: Tag = {
+    const list: List = {
       id: uuidv4(),
       name,
-      color,
       description,
+      type,
+      filterCriteria: type === 'dynamic' ? filterCriteria : undefined,
+      badgeScanIds: type === 'static' ? (badgeScanIds || []) : undefined,
+      contactCount: type === 'static' ? (badgeScanIds?.length || 0) : 0,
+      lastUpdated: new Date(),
       createdAt: new Date(),
     }
 
-    await storage.saveTag(tag)
+    await storage.saveList(list)
 
-    return NextResponse.json<APIResponse<Tag>>(
+    return NextResponse.json<APIResponse<List>>(
       {
         success: true,
-        data: tag,
-        message: 'Tag created successfully',
+        data: list,
+        message: 'List created successfully',
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Failed to create tag:', error)
+    console.error('Failed to create list:', error)
     return NextResponse.json<APIResponse>(
       {
         success: false,
         error: {
-          whatFailed: 'Failed to create tag',
+          whatFailed: 'Failed to create list',
           howToFix: 'Check request format and storage connection',
           details: error instanceof Error ? error.message : 'Unknown error',
         },

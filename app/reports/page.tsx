@@ -32,6 +32,25 @@ interface ReportSummary {
   warmCount: number
   coldCount: number
   unscoredCount: number
+  // FR-032: Triple tier breakdowns
+  companyTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
+  contactTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
+  combinedTierBreakdown?: {
+    hot: number
+    warm: number
+    cold: number
+    unscored: number
+  }
 }
 
 export default function ReportsPage() {
@@ -264,6 +283,110 @@ export default function ReportsPage() {
           <p className="text-xs text-slate-500 mt-3">
             Import these CSV files into Google Sheets to share with your sales team
           </p>
+        </Card>
+      )}
+
+      {/* Triple Tier Breakdown (FR-032) */}
+      {reports.length > 0 && reports[0].companyTierBreakdown && (
+        <Card className="p-6 mt-6">
+          <h3 className="font-semibold mb-4">Dual-Tier Breakdown (FR-032)</h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Combined tier = 60% Company Tier + 40% Contact Tier
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Company Tier */}
+            <div>
+              <h4 className="font-medium mb-3 text-center">Company Tier (60%)</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded bg-red-50">
+                  <span className="text-sm">Hot</span>
+                  <Badge variant="destructive">
+                    {reports[0].companyTierBreakdown.hot}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-orange-50">
+                  <span className="text-sm">Warm</span>
+                  <Badge variant="default">
+                    {reports[0].companyTierBreakdown.warm}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-blue-50">
+                  <span className="text-sm">Cold</span>
+                  <Badge variant="secondary">
+                    {reports[0].companyTierBreakdown.cold}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-gray-50">
+                  <span className="text-sm">Unscored</span>
+                  <Badge variant="outline">
+                    {reports[0].companyTierBreakdown.unscored}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Tier */}
+            <div>
+              <h4 className="font-medium mb-3 text-center">Contact Tier (40%)</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded bg-red-50">
+                  <span className="text-sm">Hot</span>
+                  <Badge variant="destructive">
+                    {reports[0].contactTierBreakdown?.hot || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-orange-50">
+                  <span className="text-sm">Warm</span>
+                  <Badge variant="default">
+                    {reports[0].contactTierBreakdown?.warm || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-blue-50">
+                  <span className="text-sm">Cold</span>
+                  <Badge variant="secondary">
+                    {reports[0].contactTierBreakdown?.cold || 0}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-gray-50">
+                  <span className="text-sm">Unscored</span>
+                  <Badge variant="outline">
+                    {reports[0].contactTierBreakdown?.unscored || 0}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Combined Tier */}
+            <div>
+              <h4 className="font-medium mb-3 text-center">Combined Tier (Final)</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded bg-red-50 border-2 border-red-200">
+                  <span className="text-sm font-semibold">Hot</span>
+                  <Badge variant="destructive" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.hot || reports[0].hotCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-orange-50 border-2 border-orange-200">
+                  <span className="text-sm font-semibold">Warm</span>
+                  <Badge variant="default" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.warm || reports[0].warmCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-blue-50 border-2 border-blue-200">
+                  <span className="text-sm font-semibold">Cold</span>
+                  <Badge variant="secondary" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.cold || reports[0].coldCount}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-gray-50 border-2 border-gray-200">
+                  <span className="text-sm font-semibold">Unscored</span>
+                  <Badge variant="outline" className="font-bold">
+                    {reports[0].combinedTierBreakdown?.unscored || reports[0].unscoredCount}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
         </Card>
       )}
 

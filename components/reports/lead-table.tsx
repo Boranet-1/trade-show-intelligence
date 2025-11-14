@@ -25,7 +25,9 @@ import {
   Phone,
   Building,
   Briefcase,
+  ExternalLink,
 } from 'lucide-react'
+import Link from 'next/link'
 import type { LeadTier } from '@/lib/types'
 
 interface LeadTableProps {
@@ -261,13 +263,21 @@ export function LeadTable({ leads }: LeadTableProps) {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleRowExpansion(lead.badgeScan.id)}
-                    >
-                      {isExpanded ? 'Hide' : 'Details'}
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleRowExpansion(lead.badgeScan.id)}
+                      >
+                        {isExpanded ? 'Hide' : 'Details'}
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/badge-scans/${lead.badgeScan.id}`}>
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          View Profile
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
                 {isExpanded && (

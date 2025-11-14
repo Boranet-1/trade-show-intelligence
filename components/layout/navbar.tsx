@@ -10,7 +10,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Home, BarChart3, Users, TestTube2, ChevronRight, Edit3, Sparkles } from 'lucide-react'
+import { Menu, X, Home, BarChart3, Users, TestTube2, ChevronRight, Edit3, Sparkles, Settings } from 'lucide-react'
 
 interface NavItem {
   href: string
@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { href: '/personas-gen', label: 'AI Personas', icon: Sparkles },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/personas', label: 'Personas', icon: Users },
+  { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/test', label: 'Test', icon: TestTube2 },
 ]
 
