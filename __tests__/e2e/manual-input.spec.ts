@@ -238,9 +238,12 @@ test.describe('Manual Input Page', () => {
       await expect(processButton).toBeEnabled()
       await processButton.click()
 
-      // Should show success message
+      // Should show success message with enrichment info
       await expect(page.locator('text=/Successfully processed.*badge scan/i')).toBeVisible({
         timeout: 10000,
+      })
+      await expect(page.locator('text=/enrichment is in progress/i')).toBeVisible({
+        timeout: 2000,
       })
 
       // Table should be cleared
