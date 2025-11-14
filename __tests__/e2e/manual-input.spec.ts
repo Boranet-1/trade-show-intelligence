@@ -242,9 +242,15 @@ test.describe('Manual Input Page', () => {
       await expect(page.locator('text=/Successfully processed.*badge scan/i')).toBeVisible({
         timeout: 10000,
       })
-      await expect(page.locator('text=/enrichment is in progress/i')).toBeVisible({
+      await expect(page.locator('text=/enrichment is running in the background/i')).toBeVisible({
         timeout: 2000,
       })
+      await expect(page.locator('text=/report will be auto-generated/i')).toBeVisible({
+        timeout: 2000,
+      })
+
+      // Should show "View Reports" button
+      await expect(page.locator('button:has-text("View Reports")')).toBeVisible()
 
       // Table should be cleared
       await expect(page.locator('text=No rows added yet')).toBeVisible({ timeout: 5000 })

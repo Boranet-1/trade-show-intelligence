@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -21,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Trash2, Check, X, AlertCircle, Edit2, Save } from 'lucide-react'
+import { Plus, Trash2, Check, X, AlertCircle, Edit2, Save, ArrowRight } from 'lucide-react'
 
 interface BadgeScanRow {
   id: string
@@ -36,6 +37,7 @@ interface BadgeScanRow {
 }
 
 export default function ManualInputPage() {
+  const router = useRouter()
   const [rows, setRows] = useState<BadgeScanRow[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -226,12 +228,23 @@ export default function ManualInputPage() {
       {/* Success Message */}
       {showSuccess && (
         <Alert variant="default" className="mb-6 bg-green-50 border-green-200">
-          <div className="space-y-2">
-            <p className="font-semibold">Successfully processed badge scans!</p>
-            <p className="text-sm">
-              Badge scans have been created and enrichment is in progress.
-              You can generate reports once enrichment is complete.
-            </p>
+          <div className="space-y-3">
+            <div>
+              <p className="font-semibold">Successfully processed badge scans!</p>
+              <p className="text-sm mt-1">
+                Badge scans have been created and enrichment is running in the background.
+                A report will be auto-generated when enrichment completes.
+              </p>
+            </div>
+            <Button
+              onClick={() => router.push('/reports')}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              View Reports
+              <ArrowRight className="w-4 h-4" />
+            </Button>
           </div>
         </Alert>
       )}
