@@ -146,6 +146,16 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
     await this.saveBadgeScan(scan)
   }
 
+  async updateBadgeScan(scanId: string, updates: Partial<BadgeScan>): Promise<void> {
+    const scan = await this.getBadgeScan(scanId)
+    if (!scan) {
+      throw new Error(`Badge scan not found: ${scanId}`)
+    }
+    Object.assign(scan, updates)
+    scan.updatedAt = new Date()
+    await this.saveBadgeScan(scan)
+  }
+
   async bulkImportBadgeScans(scans: BadgeScan[]): Promise<string[]> {
     await this.initializeDirectories()
     const ids: string[] = []

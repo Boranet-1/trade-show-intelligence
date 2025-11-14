@@ -63,6 +63,14 @@ export interface StorageAdapter {
   updateBadgeScanStatus(scanId: string, status: EnrichmentStatus): Promise<void>
 
   /**
+   * Update badge scan with partial data
+   * @param scanId - Badge scan UUID
+   * @param updates - Partial badge scan data to update
+   * @returns Promise resolving when update complete
+   */
+  updateBadgeScan(scanId: string, updates: Partial<BadgeScan>): Promise<void>
+
+  /**
    * Bulk import badge scans from CSV upload
    * @param scans - Array of badge scan records
    * @returns Promise resolving to array of created scanIds
@@ -437,6 +445,7 @@ export abstract class BaseStorageAdapter implements StorageAdapter {
   abstract getBadgeScan(scanId: string): Promise<BadgeScan | null>
   abstract getAllBadgeScans(eventId?: string): Promise<BadgeScan[]>
   abstract updateBadgeScanStatus(scanId: string, status: EnrichmentStatus): Promise<void>
+  abstract updateBadgeScan(scanId: string, updates: Partial<BadgeScan>): Promise<void>
   abstract bulkImportBadgeScans(scans: BadgeScan[]): Promise<string[]>
   abstract flagDuplicate(scanId: string, duplicateOfId: string): Promise<void>
 
