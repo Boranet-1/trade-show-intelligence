@@ -121,7 +121,8 @@
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_take_screenshot",
       "Bash(if not exist \"C:\\Users\\User\\Projects\\Trade-Show\\specs\\001-trade-show-intelligence\" mkdir \"C:\\Users\\User\\Projects\\Trade-Show\\specs\\001-trade-show-intelligence\")",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
