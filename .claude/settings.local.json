@@ -126,7 +126,8 @@
       "mcp__playwright__browser_type",
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_console_messages",
-      "Bash(if not exist \"lib\\templates\" mkdir \"lib\\templates\")"
+      "Bash(if not exist \"lib\\templates\" mkdir \"lib\\templates\")",
+      "Bash(if not exist \"__tests__\\fixtures\" mkdir \"__tests__\\fixtures\")"
     ],
     "deny": [],
     "ask": []
