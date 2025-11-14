@@ -12,12 +12,19 @@
 - **Total Leads Collected**: {{total_scans}}
 - **Successfully Enriched**: {{enriched_count}} ({{enrichment_success_rate}}%)
 - **Average Fit Score**: {{average_fit_score}}/100
+- **Average MEDDIC Score**: {{average_meddic_score}}/100
+- **Estimated Pipeline Value**: ${{total_pipeline_value}}M
 
 ### Tier Distribution
-- **Hot Leads** (Fit Score ≥ 70%): {{hot_count}} leads
-- **Warm Leads** (Fit Score 40-69%): {{warm_count}} leads
-- **Cold Leads** (Fit Score < 40%): {{cold_count}} leads
-- **Unscored** (Insufficient data): {{unscored_count}} leads
+- 🔥 **Hot Leads** (Score ≥ 70): {{hot_count}} leads ({{hot_percentage}}%)
+- 🌡️ **Warm Leads** (Score 40-69): {{warm_count}} leads ({{warm_percentage}}%)
+- ❄️ **Cold Leads** (Score < 40): {{cold_count}} leads ({{cold_percentage}}%)
+- ⚪ **Unscored** (Insufficient data): {{unscored_count}} leads ({{unscored_percentage}}%)
+
+### MEDDIC Qualification
+- **Qualified** (MEDDIC ≥70): {{qualified_count}} companies
+- **Developing** (MEDDIC 40-69): {{developing_count}} companies
+- **Unqualified** (MEDDIC <40): {{unqualified_count}} companies
 
 ### Top Industries Represented
 {{#top_industries}}
@@ -37,9 +44,14 @@
 {{#hot_leads}}
 ### {{rank}}. {{company_name}}
 
-**Contact**: {{contact_name}} - {{job_title}}
+**Primary Contact**: {{contact_name}} - {{job_title}}
 **Email**: {{email}} | **Phone**: {{phone}}
-**Fit Score**: {{fit_score}}/100
+
+**Scores:**
+- Opportunity Score: {{opportunity_score}}/100
+- MEDDIC Score: {{meddic_score}}/100
+- Persona Fit: {{persona_fit_score}}/100
+- Engagement: {{engagement_score}}/100
 
 #### Company Profile
 - **Industry**: {{industry}}
@@ -47,14 +59,32 @@
 - **Revenue**: {{revenue_range}}
 - **Location**: {{headquarters}}
 - **Tech Stack**: {{tech_stack}}
+- **Founded**: {{founded}}
 
-#### Key Insights
-{{#key_insights}}
-- {{insight}}
-{{/key_insights}}
+#### MEDDIC Analysis
+- **Metrics**: {{metrics_score}}/100 - {{metrics_summary}}
+- **Economic Buyer**: {{economic_buyer_name}} ({{economic_buyer_title}}) - {{economic_buyer_confidence}}% confidence
+- **Decision Criteria**: {{decision_criteria_score}}/100 - {{decision_criteria_summary}}
+- **Decision Process**: {{decision_process_score}}/100 - {{decision_process_summary}}
+- **Pain Points**: {{pain_score}}/100 - {{pain_summary}}
+- **Champion**: {{champion_name}} ({{champion_title}}) - {{champion_confidence}}% confidence
 
-#### Why Hot Lead
-{{tier_justification}}
+#### Engagement Metrics
+- **Contacts Scanned**: {{contacts_scanned}} ({{#each decision_makers}}{{name}}, {{/each}})
+- **Proximity Groups**: {{proximity_groups}} coordinated meetings
+- **Booth Duration**: {{booth_duration}}
+- **Sales Notes**: {{has_notes}}
+
+#### Win Strategy
+{{win_strategy}}
+
+#### Estimated Deal Value
+${{deal_value}} ({{deal_value_basis}})
+
+#### Recommended Next Steps
+{{#next_steps}}
+- {{step}}
+{{/next_steps}}
 
 ---
 
