@@ -553,3 +553,26 @@ export interface CompanyReport {
   }
   tierJustification: string
 }
+
+// ===== Markdown Report Storage =====
+
+export interface MarkdownReport {
+  id: string
+  reportType: ReportType
+  eventId: string
+  badgeScanId?: string // Only for CompanySummary and ContactSummary
+  markdownContent: string
+  generatedAt: Date
+  version: number // For regeneration tracking
+  feedbackApplied?: string // User feedback that triggered regeneration
+  metadata?: {
+    companyName?: string
+    contactName?: string
+    totalContacts?: number
+    tierCounts?: {
+      hot: number
+      warm: number
+      cold: number
+    }
+  }
+}

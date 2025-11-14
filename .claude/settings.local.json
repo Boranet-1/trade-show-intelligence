@@ -125,7 +125,8 @@
       "Bash(git commit:*)",
       "mcp__playwright__browser_type",
       "mcp__playwright__browser_close",
-      "mcp__playwright__browser_console_messages"
+      "mcp__playwright__browser_console_messages",
+      "Bash(if not exist \"lib\\templates\" mkdir \"lib\\templates\")"
     ],
     "deny": [],
     "ask": []
