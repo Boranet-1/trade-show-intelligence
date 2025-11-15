@@ -169,6 +169,10 @@ export interface PersonaMatch {
   criteriaMatches: CriteriaMatch[]
   actionableInsights?: string[]
   calculatedAt: Date
+  // FR-032: Dual-tier calculation fields
+  companyTier?: LeadTier
+  contactTier?: LeadTier
+  combinedTierCalculation?: CombinedTierCalculation
 }
 
 export interface CriteriaMatch {

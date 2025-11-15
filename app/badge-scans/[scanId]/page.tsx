@@ -344,22 +344,22 @@ export default function BadgeScanDetailPage() {
                         <div className="flex justify-between">
                           <span>Company Tier Score:</span>
                           <span className="font-medium">
-                            {personaMatch.combinedTierCalculation.companyTierValue}%
-                            {' '}(Weight: {personaMatch.combinedTierCalculation.companyTierWeight * 100}%)
+                            {personaMatch.combinedTierCalculation.companyTierScore}
+                            {' '}(Weight: 60%)
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Contact Tier Score:</span>
                           <span className="font-medium">
-                            {personaMatch.combinedTierCalculation.contactTierValue}%
-                            {' '}(Weight: {personaMatch.combinedTierCalculation.contactTierWeight * 100}%)
+                            {personaMatch.combinedTierCalculation.contactTierScore}
+                            {' '}(Weight: 40%)
                           </span>
                         </div>
                         <div className="border-t pt-2 mt-2 flex justify-between">
                           <span className="font-semibold">Combined Score:</span>
                           <span className="font-bold">
-                            {personaMatch.combinedTierCalculation.combinedScore}%
-                            {' '}→ {personaMatch.combinedTierCalculation.resultingTier}
+                            {personaMatch.combinedTierCalculation.combinedScore}
+                            {' '}→ {personaMatch.combinedTierCalculation.combinedTier}
                           </span>
                         </div>
                       </div>
