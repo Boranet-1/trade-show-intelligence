@@ -127,7 +127,14 @@
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_console_messages",
       "Bash(if not exist \"lib\\templates\" mkdir \"lib\\templates\")",
-      "Bash(if not exist \"__tests__\\fixtures\" mkdir \"__tests__\\fixtures\")"
+      "Bash(if not exist \"__tests__\\fixtures\" mkdir \"__tests__\\fixtures\")",
+      "mcp__playwright__browser_file_upload",
+      "mcp__playwright__browser_press_key",
+      "Bash(npx playwright test:*)",
+      "Bash(npx playwright:*)",
+      "mcp__playwright__browser_handle_dialog",
+      "Bash(Select-String -Pattern \"app/reports\" -Context 2,2)",
+      "Bash(Select-String -Pattern \"app/(input|reports)|components/dashboard/markdown\" -Context 1,1)"
     ],
     "deny": [],
     "ask": []
