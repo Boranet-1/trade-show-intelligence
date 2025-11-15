@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { MEDDICScore, APIResponse } from '@/lib/types'
-import { createStorageAdapter } from '@/lib/storage/factory'
+import { getActiveStorageAdapter } from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid'
 
 /**
@@ -18,7 +18,7 @@ export async function GET(
 ) {
   try {
     const { badgeScanId } = await params
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
 
     // Get badge scan
     const badgeScan = await storage.getBadgeScan(badgeScanId)

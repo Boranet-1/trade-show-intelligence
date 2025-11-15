@@ -12,7 +12,7 @@ import { generateContactSummaryMarkdown } from '@/lib/export/contact-summary-gen
 import { generateMergedReportMarkdown } from '@/lib/export/merged-report-generator'
 import { DeepEnrichmentPipeline } from '@/lib/enrichment/deep-enrichment-pipeline'
 import { calculateEnhancedCompanyTier } from '@/lib/scoring/tier-calculator'
-import { calculateContactTiers } from '@/lib/scoring/contact-tier-calculator'
+import { calculateContactTiersForCompany } from '@/lib/scoring/contact-tier-calculator'
 import type { MarkdownReport } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -95,7 +95,7 @@ export async function POST(
           engagement_score: 50, // Placeholder
         })
 
-        const contactTiers = await calculateContactTiers([badgeScan])
+        const contactTiers = calculateContactTiersForCompany({ badgeScans: [badgeScan] })
 
         // Generate new markdown
         newMarkdownContent = await generateCompanySummaryMarkdown(
@@ -121,7 +121,7 @@ export async function POST(
           throw new AppError('Badge scan not found', 'NOT_FOUND', 404)
         }
 
-        const contactTiers = await calculateContactTiers([badgeScan])
+        const contactTiers = calculateContactTiersForCompany({ badgeScans: [badgeScan] })
         const contactTier = contactTiers.get(badgeScan.id)
         if (!contactTier) {
           throw new AppError('Contact tier not calculated', 'CALCULATION_ERROR', 500)

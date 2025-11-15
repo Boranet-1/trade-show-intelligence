@@ -5,15 +5,16 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Tag, APIResponse } from '@/lib/types'
-import { createStorageAdapter } from '@/lib/storage/factory'
+import { getActiveStorageAdapter } from '@/lib/storage'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
-    const storage = await createStorageAdapter()
-    const tag = await storage.getTag(params.tagId)
+    const { tagId } = await params
+    const storage = await getActiveStorageAdapter()
+    const tag = await storage.getTag(tagId)
 
     if (!tag) {
       return NextResponse.json<APIResponse>(
@@ -22,7 +23,7 @@ export async function GET(
           error: {
             whatFailed: 'Tag not found',
             howToFix: 'Verify the tag ID and try again',
-            details: `No tag found with ID ${params.tagId}`,
+            details: `No tag found with ID ${tagId}`,
           },
         },
         { status: 404 }
@@ -51,14 +52,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
+    const { tagId } = await params
     const body = await request.json()
     const { name, color, description } = body
 
-    const storage = await createStorageAdapter()
-    const existingTag = await storage.getTag(params.tagId)
+    const storage = await getActiveStorageAdapter()
+    const existingTag = await storage.getTag(tagId)
 
     if (!existingTag) {
       return NextResponse.json<APIResponse>(
@@ -67,7 +69,7 @@ export async function PUT(
           error: {
             whatFailed: 'Tag not found',
             howToFix: 'Verify the tag ID exists',
-            details: `No tag found with ID ${params.tagId}`,
+            details: `No tag found with ID ${tagId}`,
           },
         },
         { status: 404 }
@@ -122,11 +124,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { tagId: string } }
+  { params }: { params: Promise<{ tagId: string }> }
 ) {
   try {
-    const storage = await createStorageAdapter()
-    const tag = await storage.getTag(params.tagId)
+    const { tagId } = await params
+    const storage = await getActiveStorageAdapter()
+    const tag = await storage.getTag(tagId)
 
     if (!tag) {
       return NextResponse.json<APIResponse>(
@@ -135,14 +138,14 @@ export async function DELETE(
           error: {
             whatFailed: 'Tag not found',
             howToFix: 'Verify the tag ID exists',
-            details: `No tag found with ID ${params.tagId}`,
+            details: `No tag found with ID ${tagId}`,
           },
         },
         { status: 404 }
       )
     }
 
-    await storage.deleteTag(params.tagId)
+    await storage.deleteTag(tagId)
 
     return NextResponse.json<APIResponse>({
       success: true,

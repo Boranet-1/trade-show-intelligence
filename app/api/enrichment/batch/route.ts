@@ -15,7 +15,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getActiveStorageAdapter } from '@/lib/storage'
 import { createEnrichmentOrchestrator } from '@/lib/enrichment/orchestrator'
 import { batchJobQueue, BatchJobStatus } from '@/lib/enrichment/batch-queue'
-import { formatApiError } from '@/lib/api/helpers'
 import { EnrichmentStatus } from '@/lib/types'
 import type { BadgeScan, Persona } from '@/lib/types'
 
@@ -379,7 +378,7 @@ async function generateMarkdownReportsForEvent(
 
     const { DeepEnrichmentPipeline } = await import('@/lib/enrichment/deep-enrichment-pipeline')
     const { calculateEnhancedCompanyTier } = await import('@/lib/scoring/tier-calculator')
-    const { calculateContactTiers } = await import('@/lib/scoring/contact-tier-calculator')
+    const { calculateContactTiersForCompany } = await import('@/lib/scoring/contact-tier-calculator')
 
     const pipeline = new DeepEnrichmentPipeline()
 
@@ -420,7 +419,7 @@ async function generateMarkdownReportsForEvent(
           engagement_score: 50, // Placeholder - should calculate from proximity groups
         })
 
-        const contactTiers = await calculateContactTiers(companyScans)
+        const contactTiers = calculateContactTiersForCompany({ badgeScans: companyScans })
 
         // Generate company summary
         await generateAndSaveCompanySummary({

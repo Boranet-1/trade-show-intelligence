@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { List, APIResponse } from '@/lib/types'
-import { createStorageAdapter } from '@/lib/storage/factory'
+import { getActiveStorageAdapter } from '@/lib/storage'
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { listId } = await params
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
     const list = await storage.getList(listId)
 
     if (!list) {
@@ -59,7 +59,7 @@ export async function PUT(
     const body = await request.json()
     const { name, description, type, filterCriteria, badgeScanIds } = body
 
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
     const existingList = await storage.getList(listId)
 
     if (!existingList) {
@@ -117,7 +117,7 @@ export async function DELETE(
 ) {
   try {
     const { listId } = await params
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
     const list = await storage.getList(listId)
 
     if (!list) {

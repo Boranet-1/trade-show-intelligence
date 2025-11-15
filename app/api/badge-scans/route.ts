@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     // Create badge scan object
     const badgeScan: Omit<BadgeScan, 'id'> = {
       eventId: body.eventId,
+      eventName: body.eventName || 'Unknown Event',
       scannedAt: body.scannedAt ? new Date(body.scannedAt) : new Date(),
       firstName: body.firstName || undefined,
       lastName: body.lastName || undefined,
@@ -48,9 +49,11 @@ export async function POST(request: Request) {
       company: body.company || undefined,
       jobTitle: body.jobTitle || undefined,
       phone: body.phone || undefined,
-      linkedinUrl: body.linkedinUrl || undefined,
       notes: body.notes || undefined,
-      metadata: body.metadata || {},
+      customFields: body.customFields || body.metadata || {},
+      enrichmentStatus: 'PENDING' as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
 
     // Save to storage
