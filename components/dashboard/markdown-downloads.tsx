@@ -322,122 +322,123 @@ export function MarkdownDownloads({ eventId, onPreview, compact = false }: Markd
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Markdown Reports
-            </CardTitle>
-            <CardDescription className="mt-1">
-              {totalReports} report{totalReports > 1 ? 's' : ''} available for download
-            </CardDescription>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Markdown Reports
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {totalReports} report{totalReports > 1 ? 's' : ''} available for download
+              </CardDescription>
+            </div>
+            <Button
+              variant="default"
+              onClick={() => handleBulkDownload()}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Download All as ZIP
+            </Button>
           </div>
-          <Button
-            variant="default"
-            onClick={() => handleBulkDownload()}
-          >
-            <Package className="h-4 w-4 mr-2" />
-            Download All as ZIP
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {Object.entries(reportsByType).map(([type, typeReports]) => {
-            if (typeReports.length === 0) return null
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {Object.entries(reportsByType).map(([type, typeReports]) => {
+              if (typeReports.length === 0) return null
 
-            return (
-              <div key={type}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm">
-                    {type === 'CROSummary' && 'CRO Summary'}
-                    {type === 'CompanySummary' && 'Company Summaries'}
-                    {type === 'ContactSummary' && 'Contact Summaries'}
-                    {type === 'MergedReport' && 'Merged Reports'}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{typeReports.length}</Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkDownload(type)}
-                    >
-                      <Download className="h-3 w-3 mr-2" />
-                      Download All
-                    </Button>
+              return (
+                <div key={type}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm">
+                      {type === 'CROSummary' && 'CRO Summary'}
+                      {type === 'CompanySummary' && 'Company Summaries'}
+                      {type === 'ContactSummary' && 'Contact Summaries'}
+                      {type === 'MergedReport' && 'Merged Reports'}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{typeReports.length}</Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkDownload(type)}
+                      >
+                        <Download className="h-3 w-3 mr-2" />
+                        Download All
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {typeReports.map((report, idx) => {
+                      const reportIndex = reports.findIndex(r => r.id === report.id)
+                      return (
+                        <div
+                          key={report.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              {getReportTypeBadge(report.reportType)}
+                              <span className="text-sm font-medium">
+                                {report.metadata?.companyName ||
+                                  report.metadata?.contactName ||
+                                  `${report.reportType} Report`}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              v{report.version} • {new Date(report.generatedAt).toLocaleDateString()}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePreviewClick(reportIndex)}
+                              title="Preview"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={downloadingId === report.id}
+                              onClick={() => handleDownload(report.id, 'markdown')}
+                            >
+                              {downloadingId === report.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                              <span className="ml-2">MD</span>
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              disabled={downloadingId === report.id}
+                              onClick={() => handleDownload(report.id, 'pdf')}
+                            >
+                              {downloadingId === report.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                              <span className="ml-2">PDF</span>
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  {typeReports.map((report, idx) => {
-                    const reportIndex = reports.findIndex(r => r.id === report.id)
-                    return (
-                      <div
-                        key={report.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {getReportTypeBadge(report.reportType)}
-                            <span className="text-sm font-medium">
-                              {report.metadata?.companyName ||
-                                report.metadata?.contactName ||
-                                `${report.reportType} Report`}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            v{report.version} • {new Date(report.generatedAt).toLocaleDateString()}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePreviewClick(reportIndex)}
-                            title="Preview"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={downloadingId === report.id}
-                            onClick={() => handleDownload(report.id, 'markdown')}
-                          >
-                            {downloadingId === report.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                            <span className="ml-2">MD</span>
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            disabled={downloadingId === report.id}
-                            onClick={() => handleDownload(report.id, 'pdf')}
-                          >
-                            {downloadingId === report.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
-                            <span className="ml-2">PDF</span>
-                          </Button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -528,5 +529,6 @@ export function MarkdownDownloads({ eventId, onPreview, compact = false }: Markd
           </div>
         </DialogContent>
       </Dialog>
+    </>
   )
 }
