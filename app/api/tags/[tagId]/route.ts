@@ -99,7 +99,7 @@ export async function PUT(
       )
     }
 
-    await storage.updateTag(updatedTag)
+    await storage.updateTag(tagId, { name, color, description })
 
     return NextResponse.json<APIResponse<Tag>>({
       success: true,
@@ -147,8 +147,9 @@ export async function DELETE(
 
     await storage.deleteTag(tagId)
 
-    return NextResponse.json<APIResponse>({
+    return NextResponse.json<APIResponse<null>>({
       success: true,
+      data: null,
       message: 'Tag deleted successfully',
     })
   } catch (error) {

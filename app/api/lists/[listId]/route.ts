@@ -77,8 +77,7 @@ export async function PUT(
     }
 
     // Update fields
-    const updatedList: List = {
-      ...existingList,
+    const updates: Partial<List> = {
       name: name ?? existingList.name,
       description: description !== undefined ? description : existingList.description,
       type: type ?? existingList.type,
@@ -88,7 +87,12 @@ export async function PUT(
       lastUpdated: new Date(),
     }
 
-    await storage.updateList(updatedList)
+    await storage.updateList(listId, updates)
+
+    const updatedList: List = {
+      ...existingList,
+      ...updates,
+    }
 
     return NextResponse.json<APIResponse<List>>({
       success: true,
@@ -136,8 +140,9 @@ export async function DELETE(
 
     await storage.deleteList(listId)
 
-    return NextResponse.json<APIResponse>({
+    return NextResponse.json<APIResponse<null>>({
       success: true,
+      data: null,
       message: 'List deleted successfully',
     })
   } catch (error) {

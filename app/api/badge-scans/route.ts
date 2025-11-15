@@ -38,8 +38,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create badge scan object
-    const badgeScan: Omit<BadgeScan, 'id'> = {
+    // Create badge scan object with generated ID
+    const badgeScan: BadgeScan = {
+      id: crypto.randomUUID(),
       eventId: body.eventId,
       eventName: body.eventName || 'Unknown Event',
       scannedAt: body.scannedAt ? new Date(body.scannedAt) : new Date(),

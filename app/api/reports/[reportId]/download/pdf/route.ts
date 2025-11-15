@@ -55,7 +55,7 @@ export async function GET(
     // Generate filename
     const filename = generatePDFFilename(report)
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

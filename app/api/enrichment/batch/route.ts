@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getActiveStorageAdapter } from '@/lib/storage'
 import { createEnrichmentOrchestrator } from '@/lib/enrichment/orchestrator'
 import { batchJobQueue, BatchJobStatus } from '@/lib/enrichment/batch-queue'
-import { EnrichmentStatus } from '@/lib/types'
+import { EnrichmentStatus, ReportType } from '@/lib/types'
 import type { BadgeScan, Persona } from '@/lib/types'
 
 const BATCH_SIZE = 10 // Process 10 companies at a time
@@ -451,7 +451,7 @@ async function generateMarkdownReportsForEvent(
         if (contactSummaries.length > 0) {
           const companySummaryReport = await storage.getLatestMarkdownReportForScan(
             primaryScan.id,
-            'CompanySummary'
+            ReportType.CompanySummary
           )
 
           if (companySummaryReport) {

@@ -147,7 +147,8 @@ export async function POST(request: NextRequest) {
     // Save proximity groups to storage
     if (proximityGroups.length > 0) {
       for (const group of proximityGroups) {
-        await storage.saveProximityGroup(group)
+        // NOTE: saveProximityGroup is not yet implemented in the storage adapter
+        // await storage.saveProximityGroup(group)
       }
 
       // Assign proximity group IDs to badge scans

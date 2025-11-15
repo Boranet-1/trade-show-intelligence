@@ -26,8 +26,8 @@ export interface EnrichmentResult {
   error?: string
   processedAt: Date
   // FR-032: Dual-tier calculation results
-  companyTier?: string
-  contactTier?: string
+  companyTier?: import('@/lib/types').LeadTier
+  contactTier?: import('@/lib/types').LeadTier
   combinedTierCalculation?: import('@/lib/types').CombinedTierCalculation
 }
 

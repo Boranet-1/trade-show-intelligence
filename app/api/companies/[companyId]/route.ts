@@ -88,7 +88,7 @@ export async function GET(
     }
 
     // Get markdown reports for this company
-    const allMarkdownReports = await adapter.getAllMarkdownReports()
+    const allMarkdownReports = await adapter.getAllMarkdownReports(primaryScan.eventId)
     const companyMarkdownReports = allMarkdownReports.filter((report) => {
       // Include CRO summaries for the event
       if (

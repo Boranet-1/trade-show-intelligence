@@ -112,8 +112,9 @@ export async function DELETE(
       )
     }
 
-    return NextResponse.json<APIResponse>({
+    return NextResponse.json<APIResponse<null>>({
       success: true,
+      data: null,
       message: 'Export job deleted successfully',
     })
   } catch (error) {
