@@ -21,7 +21,7 @@
 - Q: What encryption standard should be used for API keys stored at rest? → A: AES-256 encryption with secure key management (keys stored in environment variables or key management service)
 - Q: How should API key rotation be handled for security and compliance? → A: Automated rotation with configurable expiry windows (e.g., 30/60/90 days) where both old and new keys work during transition period
 - Q: Should the tier classification system be 3-tier (Hot/Warm/Cold) or include an additional tier for leads with insufficient enrichment data? → A: 4-tier system (Hot/Warm/Cold/Unscored) where Unscored is assigned to leads with <30% data coverage or failed enrichment
-- Q: What is the fallback order when enrichment providers fail or are rate-limited? → A: Sequential fallback by reliability: Claude → GPT-4 → Gemini → Perplexity, then mark as "pending enrichment" for manual retry if all fail
+- Q: What is the fallback order when enrichment providers fail or are rate-limited? → A: Sequential fallback by reliability: Claude → GPT-4 → Gemini with 2/3 consensus threshold, then mark as "pending enrichment" for manual retry if all fail
 - Q: How frequently should the UI update to show real-time processing progress? → A: Update every 10 records processed or every 5 seconds (whichever occurs first)
 - Q: What qualifies as a "valid company name" for enrichment success rate calculation? → A: Minimum 2 characters with basic format validation (cannot be only numbers or special characters)
 
@@ -34,6 +34,11 @@
 
 - Q: What level of observability and monitoring should the system provide for operations teams? → A: Basic - Log enrichment attempts/failures, API usage metrics, storage operations with timestamps and error details
 - Q: What data privacy and retention policies should the system enforce for badge scan contact information? → A: Basic - Implement 2-year automatic data retention with user-triggered deletion, anonymize PII for analytics, include GDPR-compliant data export/deletion API
+
+### Session 2025-11-14
+
+- Q: Given that Perplexity API client was removed from the codebase, how many LLM providers should the multi-LLM verification system use? → A: Use 3 providers only (Claude, GPT-4, Gemini) with 2/3 consensus threshold
+- Q: The spec describes both a "4-tier system (Hot/Warm/Cold/Unscored)" (FR-004) and a "dual-tier system with Company Tier + Contact Tier + Combined Tier" (FR-032). How should tiers be displayed to users? → A: Display only 4 Combined Tier values (Hot/Warm/Cold/Unscored) prominently, with Company/Contact tier details available in drill-down or tooltip
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -143,7 +148,7 @@ A marketing manager wants to organize enriched leads beyond the automatic tier c
 ### Edge Cases
 
 - What happens when the uploaded CSV file has missing or malformed data (e.g., invalid email format, missing company name)? System validates company names (minimum 2 characters, cannot be only numbers or special characters) before attempting enrichment and flags invalid entries for user review
-- When primary enrichment source fails or is rate-limited, system attempts alternative enrichment providers in order (Claude → GPT-4 → Gemini → Perplexity) before marking record as "pending enrichment" for manual retry
+- When primary enrichment source fails or is rate-limited, system attempts alternative enrichment providers in order (Claude → GPT-4 → Gemini) with 2/3 consensus threshold before marking record as "pending enrichment" for manual retry
 - When processing very large files (1000+ badge scans) that may exceed API rate limits or processing time constraints, system processes in chunks with progress persistence allowing users to pause/resume operations while displaying estimated completion time
 - When storage backend becomes unavailable mid-processing, system queues failed storage operations for retry with exponential backoff, continues processing enrichment with temporary in-memory storage, and displays warning banner to user informing them of storage unavailability
 - When a lead matches multiple personas with equal fit scores, system assigns the lead to all matching personas and displays multi-persona indicator in reports
@@ -173,7 +178,7 @@ A marketing manager wants to organize enriched leads beyond the automatic tier c
 - **FR-013**: System MUST support exporting reports in CSV and PDF formats
 - **FR-014**: System MUST validate CSV file structure and provide actionable error messages for invalid formats, where each error message includes (1) what validation failed, (2) how to fix the issue, and (3) example of correct format
 - **FR-015**: System MUST detect duplicate badge scans based on email address and flag them for user review with side-by-side comparison interface showing all scan instances and enrichment data
-- **FR-016**: System MUST attempt alternative enrichment data sources when primary source fails or is rate-limited, following sequential fallback order (Claude → GPT-4 → Gemini → Perplexity), before marking records as "pending enrichment" for manual retry
+- **FR-016**: System MUST attempt alternative enrichment data sources when primary source fails or is rate-limited, following sequential fallback order (Claude → GPT-4 → Gemini) with 2/3 consensus threshold, before marking records as "pending enrichment" for manual retry
 - **FR-017**: System MUST assign leads to all personas when multiple personas have equal fit scores and display multi-persona indicator in reports
 - **FR-018**: System MUST generate CRO_summary.md report containing executive summary (tier distribution, enrichment success rate, event metadata), top 10 Hot leads with key insights and contact details, and recommended follow-up priorities organized by tier
 - **FR-019**: System MUST generate individual company reports for each enriched lead containing company profile (size, industry, revenue, tech stack), persona match analysis with fit score breakdown, actionable insights (pain points and conversation starters), and tier assignment justification
@@ -189,7 +194,7 @@ A marketing manager wants to organize enriched leads beyond the automatic tier c
 - **FR-029**: System MUST provide tag management functionality allowing marketing managers to create custom tags with names and colors, apply tags to contacts individually or in bulk, and filter reports by tag criteria
 - **FR-030**: System MUST support list creation and management with both static (manually curated) and dynamic (filter-based auto-population) list types, allowing contacts to belong to multiple lists simultaneously
 - **FR-031**: System MUST detect badge scans occurring within 15-second proximity window and flag them as "potential associations" to identify consultants, joint meeting attendees, or transitioning employees, displaying LOW confidence level requiring manual review
-- **FR-032**: System MUST implement dual tiering with independent Company Tier (based on company persona match) and Contact Tier (based on people persona match), then calculate Combined Tier indicator (Hot/Warm/Cold) using weighted algorithm that prioritizes company tier (60% weight) and contact tier (40% weight)
+- **FR-032**: System MUST implement dual tiering with independent Company Tier (based on company persona match) and Contact Tier (based on people persona match), then calculate Combined Tier indicator (Hot/Warm/Cold/Unscored) using weighted algorithm that prioritizes company tier (60% weight) and contact tier (40% weight). Combined Tier MUST be displayed prominently in all reports and dashboards, with Company Tier and Contact Tier breakdown details available in drill-down views or tooltips
 
 ### Key Entities
 
@@ -198,7 +203,7 @@ A marketing manager wants to organize enriched leads beyond the automatic tier c
 - **Business Persona**: Ideal customer profile definition used for lead scoring, now supporting three types (Exhibitor, Target Company, Target People) with type-specific criteria fields. Exhibitor Persona is auto-generated from website scraping and editable. Target Company Persona contains firmographic criteria (size, industry, revenue, tech stack). Target People Persona contains role/seniority criteria and MEDDIC decision-making roles
 - **Company Tier**: Tier assignment (Hot, Warm, Cold, Unscored) for a company entity based on match to Target Company Persona, calculated as percentage of company criteria met (Hot: >=70%, Warm: 40-69%, Cold: <40%, Unscored: <30% data coverage)
 - **Contact Tier**: Tier assignment (Hot, Warm, Cold, Unscored) for an individual contact based on match to Target People Persona, calculated as percentage of people criteria met (same thresholds as Company Tier)
-- **Combined Tier**: Final prioritization indicator (Hot, Warm, Cold) combining Company Tier (60% weight) and Contact Tier (40% weight) to determine overall follow-up priority
+- **Combined Tier**: Primary user-facing tier classification (Hot, Warm, Cold, Unscored) prominently displayed in all reports and dashboards. Calculated by combining Company Tier (60% weight) and Contact Tier (40% weight) to determine overall follow-up priority. Company and Contact tier details visible in drill-down views or tooltips
 - **MEDDIC Score**: On-demand qualification analysis containing scores across six dimensions (Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion), overall qualification status, identified missing decision makers, and recommended engagement strategy
 - **Tag**: User-defined label with name and color used to categorize contacts for organizational purposes (e.g., "Q1 Follow-up", "Demo Scheduled")
 - **List**: Collection of contacts organized for campaign or sales assignment purposes, supporting static (manual) and dynamic (filter-based) membership types

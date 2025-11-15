@@ -331,7 +331,7 @@ async function processBatchEnrichment(
   // Mark job as complete
   batchJobQueue.completeJob(jobId)
 
-  // Auto-generate report after enrichment completes
+  // Auto-generate report and markdown summaries after enrichment completes
   try {
     const job = batchJobQueue.getJob(jobId)
     if (job && job.eventId) {
@@ -341,9 +341,178 @@ async function processBatchEnrichment(
       const report = await storage.generateReport(job.eventId)
 
       console.log(`[Batch Enrichment] Report generated: ${report.id} with ${report.badgeScanIds.length} badge scans`)
+
+      // Generate markdown reports for all enriched companies
+      await generateMarkdownReportsForEvent(job.eventId, badgeScans)
     }
   } catch (error) {
     console.error('[Batch Enrichment] Failed to auto-generate report:', error)
     // Don't fail the job if report generation fails
+  }
+}
+
+/**
+ * Generate markdown reports for all enriched badge scans in an event
+ */
+async function generateMarkdownReportsForEvent(
+  eventId: string,
+  badgeScans: BadgeScan[]
+): Promise<void> {
+  try {
+    console.log(`[Markdown Generation] Starting for event ${eventId} with ${badgeScans.length} badge scans`)
+
+    const storage = await getActiveStorageAdapter()
+    const event = await storage.getEvent(eventId)
+
+    if (!event) {
+      console.error(`[Markdown Generation] Event not found: ${eventId}`)
+      return
+    }
+
+    // Import markdown generation services
+    const {
+      generateAndSaveCompanySummary,
+      generateAndSaveContactSummary,
+      generateAndSaveMergedReport,
+      generateAndSaveCROSummary,
+    } = await import('@/lib/reports/markdown-report-service')
+
+    const { DeepEnrichmentPipeline } = await import('@/lib/enrichment/deep-enrichment-pipeline')
+    const { calculateEnhancedCompanyTier } = await import('@/lib/scoring/tier-calculator')
+    const { calculateContactTiers } = await import('@/lib/scoring/contact-tier-calculator')
+
+    const pipeline = new DeepEnrichmentPipeline()
+
+    // Group badge scans by company
+    const companiesMap = new Map<string, BadgeScan[]>()
+    for (const scan of badgeScans) {
+      const companyKey = scan.company.toLowerCase().trim()
+      if (!companiesMap.has(companyKey)) {
+        companiesMap.set(companyKey, [])
+      }
+      companiesMap.get(companyKey)!.push(scan)
+    }
+
+    // Generate reports for each company
+    for (const [companyKey, companyScans] of companiesMap) {
+      try {
+        const primaryScan = companyScans[0]
+        const additionalContacts = companyScans.slice(1)
+
+        // Get enriched company
+        const enrichedCompany = await storage.getEnrichedCompany(primaryScan.id)
+        if (!enrichedCompany) {
+          console.log(`[Markdown Generation] Skipping ${companyKey} - no enrichment data`)
+          continue
+        }
+
+        // Run deep enrichment for MEDDIC analysis
+        const deepEnrichment = await pipeline.enrichCompany({
+          badgeScan: primaryScan,
+          additionalContacts,
+        })
+
+        // Calculate tiers
+        const personaMatch = await storage.getBestPersonaMatch(primaryScan.id)
+        const companyTier = calculateEnhancedCompanyTier({
+          persona_fit_score: personaMatch?.fitScore || 0,
+          meddic_score: deepEnrichment.meddic_score?.overallScore,
+          engagement_score: 50, // Placeholder - should calculate from proximity groups
+        })
+
+        const contactTiers = await calculateContactTiers(companyScans)
+
+        // Generate company summary
+        await generateAndSaveCompanySummary({
+          badgeScan: primaryScan,
+          enrichedCompany,
+          deepEnrichment,
+          companyTier,
+          contactTiers,
+          additionalContacts,
+          event,
+        })
+
+        // Generate contact summaries
+        const contactSummaries: string[] = []
+        for (const scan of companyScans) {
+          const contactTier = contactTiers.get(scan.id)
+          if (contactTier) {
+            const contactReport = await generateAndSaveContactSummary({
+              badgeScan: scan,
+              contactTier,
+              companyTier: companyTier.tier,
+              event,
+            })
+            contactSummaries.push(contactReport.markdownContent)
+          }
+        }
+
+        // Generate merged report
+        if (contactSummaries.length > 0) {
+          const companySummaryReport = await storage.getLatestMarkdownReportForScan(
+            primaryScan.id,
+            'CompanySummary'
+          )
+
+          if (companySummaryReport) {
+            await generateAndSaveMergedReport({
+              companySummaryMarkdown: companySummaryReport.markdownContent,
+              contactSummaryMarkdowns: contactSummaries,
+              companyName: primaryScan.company,
+              eventName: event.name,
+              totalContacts: companyScans.length,
+              tierCounts: {
+                hot: Array.from(contactTiers.values()).filter((t) => t.tier === 'Hot').length,
+                warm: Array.from(contactTiers.values()).filter((t) => t.tier === 'Warm').length,
+                cold: Array.from(contactTiers.values()).filter((t) => t.tier === 'Cold').length,
+              },
+              event,
+              badgeScanId: primaryScan.id,
+            })
+          }
+        }
+
+        console.log(`[Markdown Generation] Generated reports for ${companyKey}`)
+      } catch (error) {
+        console.error(`[Markdown Generation] Failed for ${companyKey}:`, error)
+        // Continue with next company
+      }
+    }
+
+    // Generate CRO summary for entire event
+    try {
+      const allEnrichedCompanies = new Map()
+      const allPersonaMatches = new Map()
+      const allMEDDICScores = new Map()
+
+      for (const scan of badgeScans) {
+        const enriched = await storage.getEnrichedCompany(scan.id)
+        if (enriched) allEnrichedCompanies.set(scan.id, enriched)
+
+        const match = await storage.getBestPersonaMatch(scan.id)
+        if (match) allPersonaMatches.set(scan.id, match)
+
+        // MEDDIC scores would come from deep enrichment
+        // For now, use placeholder
+        allMEDDICScores.set(scan.id, { overallScore: 70, engagementStrategy: 'Follow up immediately' })
+      }
+
+      await generateAndSaveCROSummary({
+        event,
+        allBadgeScans: badgeScans,
+        enrichedCompaniesMap: allEnrichedCompanies,
+        personaMatchesMap: allPersonaMatches,
+        meddICScoresMap: allMEDDICScores,
+      })
+
+      console.log(`[Markdown Generation] CRO summary generated for event ${eventId}`)
+    } catch (error) {
+      console.error(`[Markdown Generation] Failed to generate CRO summary:`, error)
+    }
+
+    console.log(`[Markdown Generation] Completed for event ${eventId}`)
+  } catch (error) {
+    console.error(`[Markdown Generation] Error for event ${eventId}:`, error)
   }
 }

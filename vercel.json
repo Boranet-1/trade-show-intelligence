@@ -1,0 +1,30 @@
+{
+  "functions": {
+    "app/api/enrichment/batch/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/enrichment/status/[jobId]/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/reports/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/reports/[reportId]/export/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/reports/[reportId]/regenerate/route.ts": {
+      "maxDuration": 180
+    }
+  },
+  "env": {
+    "DATABASE_TYPE": "postgresql",
+    "FIRECRAWL_API_KEY": "@firecrawl-api-key",
+    "TAVILY_API_KEY": "@tavily-api-key",
+    "APIFY_API_KEY": "@apify-api-key"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_APP_URL": "https://trade-show-intelligence.vercel.app"
+    }
+  }
+}

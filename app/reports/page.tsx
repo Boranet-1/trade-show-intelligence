@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ExportButton } from '@/components/ui/export-button'
+import { MarkdownDownloads } from '@/components/dashboard/markdown-downloads'
 import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
 
@@ -412,6 +413,11 @@ export default function ReportsPage() {
           </div>
         </div>
       </Card>
+
+      {/* Markdown Downloads */}
+      {reports.length > 0 && reports[0].eventId && (
+        <MarkdownDownloads eventId={reports[0].eventId} />
+      )}
     </div>
   )
 }

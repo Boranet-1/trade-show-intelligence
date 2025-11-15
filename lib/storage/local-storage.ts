@@ -20,6 +20,8 @@ import type {
   ExportedData,
   ExportFormat,
   ReportStatistics,
+  MarkdownReport,
+  ReportType,
 } from '@/lib/types'
 import { StorageAdapterType, EnrichmentStatus, LeadTier } from '@/lib/types'
 
@@ -51,6 +53,7 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
       path.join(this.dataDir, 'lists'),
       path.join(this.dataDir, 'tags'),
       path.join(this.dataDir, 'configs'),
+      path.join(this.dataDir, 'markdown'),
     ]
 
     for (const dir of dirs) {
@@ -139,6 +142,16 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
       throw new Error(`Badge scan not found: ${scanId}`)
     }
     scan.enrichmentStatus = status
+    scan.updatedAt = new Date()
+    await this.saveBadgeScan(scan)
+  }
+
+  async updateBadgeScan(scanId: string, updates: Partial<BadgeScan>): Promise<void> {
+    const scan = await this.getBadgeScan(scanId)
+    if (!scan) {
+      throw new Error(`Badge scan not found: ${scanId}`)
+    }
+    Object.assign(scan, updates)
     scan.updatedAt = new Date()
     await this.saveBadgeScan(scan)
   }
@@ -882,6 +895,58 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
       markdown += `Based on the fit score of ${match.fitScore.toFixed(1)}%, this lead is categorized as ${match.tier}.\n`
 
       await fs.writeFile(reportPath, markdown, 'utf-8')
+    }
+  }
+
+  // ===== Markdown Report Operations =====
+
+  async saveMarkdownReport(report: MarkdownReport): Promise<string> {
+    await this.initializeDirectories()
+    const filePath = path.join(this.dataDir, 'markdown', `${report.id}.json`)
+    await this.writeJSON(filePath, report)
+    return report.id
+  }
+
+  async getMarkdownReport(reportId: string): Promise<MarkdownReport | null> {
+    const filePath = path.join(this.dataDir, 'markdown', `${reportId}.json`)
+    return this.readJSON<MarkdownReport>(filePath)
+  }
+
+  async getAllMarkdownReports(eventId: string, reportType?: ReportType): Promise<MarkdownReport[]> {
+    const reports = await this.readAllJSON<MarkdownReport>(path.join(this.dataDir, 'markdown'))
+    let filtered = reports.filter((r) => r.eventId === eventId)
+
+    if (reportType) {
+      filtered = filtered.filter((r) => r.reportType === reportType)
+    }
+
+    return filtered.sort((a, b) => b.generatedAt.getTime() - a.generatedAt.getTime())
+  }
+
+  async getLatestMarkdownReportForScan(
+    badgeScanId: string,
+    reportType: ReportType
+  ): Promise<MarkdownReport | null> {
+    const reports = await this.readAllJSON<MarkdownReport>(path.join(this.dataDir, 'markdown'))
+    const filtered = reports.filter(
+      (r) => r.badgeScanId === badgeScanId && r.reportType === reportType
+    )
+
+    if (filtered.length === 0) return null
+
+    return filtered.reduce((latest, current) =>
+      current.generatedAt > latest.generatedAt ? current : latest
+    )
+  }
+
+  async deleteMarkdownReport(reportId: string): Promise<void> {
+    const filePath = path.join(this.dataDir, 'markdown', `${reportId}.json`)
+    try {
+      await fs.unlink(filePath)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error
+      }
     }
   }
 

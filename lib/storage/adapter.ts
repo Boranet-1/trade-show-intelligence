@@ -23,6 +23,8 @@ import type {
   ExportFormat,
   List,
   Tag,
+  MarkdownReport,
+  ReportType,
 } from '@/lib/types'
 
 /**
@@ -59,6 +61,14 @@ export interface StorageAdapter {
    * @returns Promise resolving when update complete
    */
   updateBadgeScanStatus(scanId: string, status: EnrichmentStatus): Promise<void>
+
+  /**
+   * Update badge scan with partial data
+   * @param scanId - Badge scan UUID
+   * @param updates - Partial badge scan data to update
+   * @returns Promise resolving when update complete
+   */
+  updateBadgeScan(scanId: string, updates: Partial<BadgeScan>): Promise<void>
 
   /**
    * Bulk import badge scans from CSV upload
@@ -349,6 +359,48 @@ export interface StorageAdapter {
    */
   exportToFormat(eventId: string, format: ExportFormat): Promise<string>
 
+  // ===== Markdown Report Operations =====
+
+  /**
+   * Save generated markdown report
+   * @param report - Markdown report record
+   * @returns Promise resolving to report ID (UUID)
+   */
+  saveMarkdownReport(report: MarkdownReport): Promise<string>
+
+  /**
+   * Retrieve markdown report by ID
+   * @param reportId - Markdown report UUID
+   * @returns Promise resolving to markdown report or null if not found
+   */
+  getMarkdownReport(reportId: string): Promise<MarkdownReport | null>
+
+  /**
+   * Retrieve all markdown reports for an event
+   * @param eventId - Event ID to filter by
+   * @param reportType - Optional report type to filter by
+   * @returns Promise resolving to array of markdown reports
+   */
+  getAllMarkdownReports(eventId: string, reportType?: ReportType): Promise<MarkdownReport[]>
+
+  /**
+   * Retrieve latest markdown report for a badge scan
+   * @param badgeScanId - Badge scan UUID
+   * @param reportType - Report type (CompanySummary or ContactSummary)
+   * @returns Promise resolving to latest markdown report or null
+   */
+  getLatestMarkdownReportForScan(
+    badgeScanId: string,
+    reportType: ReportType
+  ): Promise<MarkdownReport | null>
+
+  /**
+   * Delete markdown report
+   * @param reportId - Markdown report UUID
+   * @returns Promise resolving when deletion complete
+   */
+  deleteMarkdownReport(reportId: string): Promise<void>
+
   // ===== Connection Management =====
 
   /**
@@ -393,6 +445,7 @@ export abstract class BaseStorageAdapter implements StorageAdapter {
   abstract getBadgeScan(scanId: string): Promise<BadgeScan | null>
   abstract getAllBadgeScans(eventId?: string): Promise<BadgeScan[]>
   abstract updateBadgeScanStatus(scanId: string, status: EnrichmentStatus): Promise<void>
+  abstract updateBadgeScan(scanId: string, updates: Partial<BadgeScan>): Promise<void>
   abstract bulkImportBadgeScans(scans: BadgeScan[]): Promise<string[]>
   abstract flagDuplicate(scanId: string, duplicateOfId: string): Promise<void>
 
@@ -440,6 +493,12 @@ export abstract class BaseStorageAdapter implements StorageAdapter {
   abstract exportAll(): Promise<ExportedData>
   abstract importAll(data: ExportedData): Promise<void>
   abstract exportToFormat(eventId: string, format: ExportFormat): Promise<string>
+
+  abstract saveMarkdownReport(report: MarkdownReport): Promise<string>
+  abstract getMarkdownReport(reportId: string): Promise<MarkdownReport | null>
+  abstract getAllMarkdownReports(eventId: string, reportType?: ReportType): Promise<MarkdownReport[]>
+  abstract getLatestMarkdownReportForScan(badgeScanId: string, reportType: ReportType): Promise<MarkdownReport | null>
+  abstract deleteMarkdownReport(reportId: string): Promise<void>
 
   abstract testConnection(): Promise<boolean>
   abstract close(): Promise<void>

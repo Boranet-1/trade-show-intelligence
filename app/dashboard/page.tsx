@@ -29,6 +29,7 @@ import {
 import { CSVUploader, type CSVUploadResult } from '@/components/upload/csv-uploader'
 import { ColumnMapper } from '@/components/upload/column-mapper'
 import { EnrichmentProgress } from '@/components/dashboard/enrichment-progress'
+import { MarkdownDownloads } from '@/components/dashboard/markdown-downloads'
 import { AlertCircle, CheckCircle2, Loader2, Upload, Settings, Users, FileText } from 'lucide-react'
 import Link from 'next/link'
 import type { CSVUploadPreview, ColumnMapping } from '@/lib/types'
@@ -361,40 +362,47 @@ export default function DashboardPage() {
 
           {/* Step 5: Complete */}
           {currentStep === 'complete' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-600">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Enrichment Complete!
-                </CardTitle>
-                <CardDescription>
-                  Your badge scans have been successfully enriched and scored
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription>
-                    Successfully processed {badgeScanIds.length} badge scans. Your leads have been scored and categorized by tier.
-                    {uploadResult?.proximityGroupsDetected && uploadResult.proximityGroupsDetected > 0 && (
-                      <div className="mt-2 pt-2 border-t">
-                        <strong>Proximity Detection (FR-031):</strong> {uploadResult.proximityGroupsDetected} group{uploadResult.proximityGroupsDetected > 1 ? 's' : ''} detected
-                        (contacts scanned within 15 seconds)
-                      </div>
-                    )}
-                  </AlertDescription>
-                </Alert>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-600">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Enrichment Complete!
+                  </CardTitle>
+                  <CardDescription>
+                    Your badge scans have been successfully enriched and scored
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertDescription>
+                      Successfully processed {badgeScanIds.length} badge scans. Your leads have been scored and categorized by tier.
+                      {uploadResult?.proximityGroupsDetected && uploadResult.proximityGroupsDetected > 0 && (
+                        <div className="mt-2 pt-2 border-t">
+                          <strong>Proximity Detection (FR-031):</strong> {uploadResult.proximityGroupsDetected} group{uploadResult.proximityGroupsDetected > 1 ? 's' : ''} detected
+                          (contacts scanned within 15 seconds)
+                        </div>
+                      )}
+                    </AlertDescription>
+                  </Alert>
 
-                <div className="flex gap-3">
-                  <Button asChild className="flex-1">
-                    <Link href="/reports">View Reports</Link>
-                  </Button>
-                  <Button variant="outline" onClick={handleReset} className="flex-1">
-                    Process Another Event
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex gap-3">
+                    <Button asChild className="flex-1">
+                      <Link href="/reports">View Reports</Link>
+                    </Button>
+                    <Button variant="outline" onClick={handleReset} className="flex-1">
+                      Process Another Event
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Markdown Downloads */}
+              {eventDetails.id && (
+                <MarkdownDownloads eventId={eventDetails.id} />
+              )}
+            </div>
           )}
 
           {/* Error Display */}
