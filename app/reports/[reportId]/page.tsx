@@ -14,6 +14,7 @@ import { TierFilter } from '@/components/reports/tier-filter'
 import { LeadTable } from '@/components/reports/lead-table'
 import { ExportButton } from '@/components/ui/export-button'
 import { RefineDialog } from '@/components/reports/refine-dialog'
+import { MarkdownDownloads } from '@/components/dashboard/markdown-downloads'
 import { ArrowLeft, Trash2, RefreshCw } from 'lucide-react'
 import type { LeadTier } from '@/lib/types'
 
@@ -348,6 +349,13 @@ export default function ReportDetailPage() {
       <div className="mt-4 text-center text-sm text-slate-600">
         Showing {filteredLeads.length} of {report.leads.length} leads
       </div>
+
+      {/* Markdown Downloads */}
+      {report.eventId && (
+        <div className="mt-6">
+          <MarkdownDownloads eventId={report.eventId} />
+        </div>
+      )}
 
       {/* Refine Dialog */}
       {showRefineDialog && (

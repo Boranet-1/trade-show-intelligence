@@ -12,12 +12,22 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { MarkdownPreview } from '@/components/reports/markdown-preview'
+import {
   Download,
   FileText,
   AlertCircle,
   Loader2,
   Package,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -48,6 +58,12 @@ export function MarkdownDownloads({ eventId, onPreview, compact = false }: Markd
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  // Preview modal state
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState<number>(0)
+  const [previewContent, setPreviewContent] = useState<string>('')
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
 
   useEffect(() => {
     fetchMarkdownReports()
@@ -144,6 +160,45 @@ export function MarkdownDownloads({ eventId, onPreview, compact = false }: Markd
     } catch (err) {
       console.error('Error creating bulk download:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to create bulk download')
+    }
+  }
+
+  const handlePreviewClick = async (reportIndex: number) => {
+    setCurrentPreviewIndex(reportIndex)
+    setPreviewOpen(true)
+    await loadPreviewContent(reportIndex)
+  }
+
+  const loadPreviewContent = async (index: number) => {
+    if (index < 0 || index >= reports.length) return
+
+    setIsLoadingPreview(true)
+    setPreviewContent('')
+
+    try {
+      const report = reports[index]
+      const response = await fetch(`/api/reports/${report.id}/download/markdown`)
+
+      if (!response.ok) {
+        throw new Error('Failed to load markdown content')
+      }
+
+      const content = await response.text()
+      setPreviewContent(content)
+    } catch (err) {
+      console.error('Error loading preview:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to load preview')
+      setPreviewContent('# Error\n\nFailed to load markdown content.')
+    } finally {
+      setIsLoadingPreview(false)
+    }
+  }
+
+  const handleNavigatePreview = (direction: 'prev' | 'next') => {
+    const newIndex = direction === 'prev' ? currentPreviewIndex - 1 : currentPreviewIndex + 1
+    if (newIndex >= 0 && newIndex < reports.length) {
+      setCurrentPreviewIndex(newIndex)
+      loadPreviewContent(newIndex)
     }
   }
 
@@ -316,64 +371,66 @@ export function MarkdownDownloads({ eventId, onPreview, compact = false }: Markd
                 </div>
 
                 <div className="space-y-2">
-                  {typeReports.map(report => (
-                    <div
-                      key={report.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          {getReportTypeBadge(report.reportType)}
-                          <span className="text-sm font-medium">
-                            {report.metadata?.companyName ||
-                              report.metadata?.contactName ||
-                              `${report.reportType} Report`}
-                          </span>
+                  {typeReports.map((report, idx) => {
+                    const reportIndex = reports.findIndex(r => r.id === report.id)
+                    return (
+                      <div
+                        key={report.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {getReportTypeBadge(report.reportType)}
+                            <span className="text-sm font-medium">
+                              {report.metadata?.companyName ||
+                                report.metadata?.contactName ||
+                                `${report.reportType} Report`}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            v{report.version} • {new Date(report.generatedAt).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          v{report.version} • {new Date(report.generatedAt).toLocaleDateString()}
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        {onPreview && (
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => onPreview(report.id, report.reportType)}
+                            onClick={() => handlePreviewClick(reportIndex)}
+                            title="Preview"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={downloadingId === report.id}
-                          onClick={() => handleDownload(report.id, 'markdown')}
-                        >
-                          {downloadingId === report.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          <span className="ml-2">MD</span>
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          disabled={downloadingId === report.id}
-                          onClick={() => handleDownload(report.id, 'pdf')}
-                        >
-                          {downloadingId === report.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          <span className="ml-2">PDF</span>
-                        </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={downloadingId === report.id}
+                            onClick={() => handleDownload(report.id, 'markdown')}
+                          >
+                            {downloadingId === report.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                            <span className="ml-2">MD</span>
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={downloadingId === report.id}
+                            onClick={() => handleDownload(report.id, 'pdf')}
+                          >
+                            {downloadingId === report.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                            <span className="ml-2">PDF</span>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )
@@ -381,5 +438,95 @@ export function MarkdownDownloads({ eventId, onPreview, compact = false }: Markd
         </div>
       </CardContent>
     </Card>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="border-b pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  {reports[currentPreviewIndex] && (
+                    <>
+                      {reports[currentPreviewIndex].metadata?.companyName ||
+                        reports[currentPreviewIndex].metadata?.contactName ||
+                        `${reports[currentPreviewIndex].reportType} Report`}
+                    </>
+                  )}
+                </DialogTitle>
+                {reports[currentPreviewIndex] && (
+                  <div className="flex items-center gap-2 mt-1">
+                    {getReportTypeBadge(reports[currentPreviewIndex].reportType)}
+                    <span className="text-xs text-slate-500">
+                      v{reports[currentPreviewIndex].version} •{' '}
+                      {new Date(reports[currentPreviewIndex].generatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Navigation Controls */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500">
+                  {currentPreviewIndex + 1} of {reports.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleNavigatePreview('prev')}
+                  disabled={currentPreviewIndex === 0 || isLoadingPreview}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleNavigatePreview('next')}
+                  disabled={currentPreviewIndex === reports.length - 1 || isLoadingPreview}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => reports[currentPreviewIndex] && handleDownload(reports[currentPreviewIndex].id, 'markdown')}
+                  disabled={isLoadingPreview}
+                >
+                  <Download className="h-4 w-4" />
+                  MD
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => reports[currentPreviewIndex] && handleDownload(reports[currentPreviewIndex].id, 'pdf')}
+                  disabled={isLoadingPreview}
+                >
+                  <Download className="h-4 w-4" />
+                  PDF
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto mt-4">
+            {isLoadingPreview ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <MarkdownPreview
+                content={previewContent}
+                title={reports[currentPreviewIndex]?.metadata?.companyName || reports[currentPreviewIndex]?.metadata?.contactName}
+                reportType={reports[currentPreviewIndex]?.reportType}
+                showTabs={true}
+                showActions={false}
+                generatedAt={reports[currentPreviewIndex] && new Date(reports[currentPreviewIndex].generatedAt)}
+                version={reports[currentPreviewIndex]?.version}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
   )
 }

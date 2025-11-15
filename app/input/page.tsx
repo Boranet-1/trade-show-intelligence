@@ -7,13 +7,21 @@
  * Human-in-the-loop review before processing
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -36,12 +44,47 @@ interface BadgeScanRow {
   errors: string[]
 }
 
+interface Event {
+  id: string
+  name: string
+}
+
 export default function ManualInputPage() {
   const router = useRouter()
   const [rows, setRows] = useState<BadgeScanRow[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  // Event selection state
+  const [availableEvents, setAvailableEvents] = useState<Event[]>([])
+  const [selectedEventOption, setSelectedEventOption] = useState<string>('') // 'existing:id' or 'new'
+  const [newEventName, setNewEventName] = useState('')
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true)
+
+  // Fetch available events on mount
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events')
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && Array.isArray(result.data)) {
+            setAvailableEvents(result.data)
+            // Default to most recent event if available
+            if (result.data.length > 0) {
+              setSelectedEventOption(`existing:${result.data[0].id}`)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error)
+      } finally {
+        setIsLoadingEvents(false)
+      }
+    }
+    fetchEvents()
+  }, [])
 
   // Validation rules
   const validateRow = (row: Partial<BadgeScanRow>): { isValid: boolean; errors: string[] } => {
@@ -107,13 +150,35 @@ export default function ManualInputPage() {
       return
     }
 
+    // Validate event selection
+    if (!selectedEventOption) {
+      alert('Please select an event or create a new one')
+      return
+    }
+
+    if (selectedEventOption === 'new' && !newEventName.trim()) {
+      alert('Please enter a name for the new event')
+      return
+    }
+
     setIsProcessing(true)
     try {
-      // Create badge scans via API
-      const eventId = 'manual-entry-' + new Date().getFullYear()
-      const eventName = `Manual Entry ${new Date().getFullYear()}`
+      // Determine event ID and name based on selection
+      let eventId: string
+      let eventName: string
 
-      // First, ensure event exists
+      if (selectedEventOption === 'new') {
+        // Create new event with timestamp to ensure uniqueness
+        eventId = `event-${Date.now()}`
+        eventName = newEventName.trim()
+      } else {
+        // Use existing event
+        eventId = selectedEventOption.replace('existing:', '')
+        const selectedEvent = availableEvents.find(e => e.id === eventId)
+        eventName = selectedEvent?.name || eventId
+      }
+
+      // Ensure event exists (creates if new, updates if existing)
       await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,6 +254,60 @@ export default function ManualInputPage() {
           Enter badge scan data manually or paste from spreadsheet
         </p>
       </div>
+
+      {/* Event Selection */}
+      <Card className="p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4">Select Event</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Choose an existing event or create a new one for these badge scans
+        </p>
+
+        {isLoadingEvents ? (
+          <div className="text-sm text-slate-500">Loading events...</div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="event-select">Event</Label>
+              <Select
+                value={selectedEventOption}
+                onValueChange={setSelectedEventOption}
+              >
+                <SelectTrigger id="event-select" className="w-full">
+                  <SelectValue placeholder="Select an event..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableEvents.map((event) => (
+                    <SelectItem key={event.id} value={`existing:${event.id}`}>
+                      {event.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="new">+ Create New Event</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedEventOption === 'new' && (
+              <div>
+                <Label htmlFor="new-event-name">New Event Name</Label>
+                <Input
+                  id="new-event-name"
+                  type="text"
+                  placeholder="e.g., AWS re:Invent 2025"
+                  value={newEventName}
+                  onChange={(e) => setNewEventName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {selectedEventOption && selectedEventOption !== 'new' && (
+              <div className="text-sm text-green-600">
+                ✓ Manual entries will be added to this event and appear in its reports
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
