@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { List, APIResponse } from '@/lib/types'
-import { createStorageAdapter } from '@/lib/storage/factory'
+import { getActiveStorageAdapter } from '@/lib/storage'
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { listId } = await params
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
     const list = await storage.getList(listId)
 
     if (!list) {
@@ -59,7 +59,7 @@ export async function PUT(
     const body = await request.json()
     const { name, description, type, filterCriteria, badgeScanIds } = body
 
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
     const existingList = await storage.getList(listId)
 
     if (!existingList) {
@@ -77,8 +77,7 @@ export async function PUT(
     }
 
     // Update fields
-    const updatedList: List = {
-      ...existingList,
+    const updates: Partial<List> = {
       name: name ?? existingList.name,
       description: description !== undefined ? description : existingList.description,
       type: type ?? existingList.type,
@@ -88,7 +87,12 @@ export async function PUT(
       lastUpdated: new Date(),
     }
 
-    await storage.updateList(updatedList)
+    await storage.updateList(listId, updates)
+
+    const updatedList: List = {
+      ...existingList,
+      ...updates,
+    }
 
     return NextResponse.json<APIResponse<List>>({
       success: true,
@@ -117,7 +121,7 @@ export async function DELETE(
 ) {
   try {
     const { listId } = await params
-    const storage = await createStorageAdapter()
+    const storage = await getActiveStorageAdapter()
     const list = await storage.getList(listId)
 
     if (!list) {
@@ -136,8 +140,9 @@ export async function DELETE(
 
     await storage.deleteList(listId)
 
-    return NextResponse.json<APIResponse>({
+    return NextResponse.json<APIResponse<null>>({
       success: true,
+      data: null,
       message: 'List deleted successfully',
     })
   } catch (error) {

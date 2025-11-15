@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
             badgeScanIds: ['123e4567-e89b-12d3-a456-426614174000'],
             customInstructions: 'Focus on cloud infrastructure and DevOps tools',
           }),
-          validationErrors: validationResult.error.errors,
+          validationErrors: validationResult.error.issues,
         })
       )
     }
@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Update status to enriching
-        await storage.updateBadgeScanStatus(scanId, EnrichmentStatus.ENRICHING)
+        // Update status to processing
+        await storage.updateBadgeScanStatus(scanId, EnrichmentStatus.PROCESSING)
 
         // Get all personas for matching
         const personas = await storage.getAllPersonas()

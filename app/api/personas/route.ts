@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initializeStorageAdapters, getActiveStorageAdapter } from '@/lib/storage/factory'
 import type { Persona, APISuccessResponse, APIErrorResponse } from '@/lib/types'
+import { PersonaType } from '@/lib/types'
 import { PersonaSchema } from '@/lib/validation/schemas'
 import { logger } from '@/lib/logger'
 
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<APISucces
     const personaData: Persona = {
       ...validation.data,
       id: crypto.randomUUID(),
+      type: PersonaType.TargetCompany, // Default to TargetCompany type for custom personas
       isDefault: false,
       createdAt: new Date(),
       updatedAt: new Date(),

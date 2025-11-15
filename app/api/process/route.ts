@@ -59,13 +59,14 @@ export async function POST(request: NextRequest) {
           companyName: scan.company,
           domain: enrichedData.domain,
           industry: enrichedData.industry,
-          employeeRange: enrichedData.size,
-          tier: enrichedData.tier,
+          employeeRange: enrichedData.size as any, // Mock data may not match exact type
+          consensusMetadata: {},
+          dataSource: [],
           enrichedAt: new Date(),
         })
 
         // Update scan status
-        await storage.updateBadgeScanStatus(scan.id, EnrichmentStatus.COMPLETED)
+        await storage.updateBadgeScanStatus(scan.id, EnrichmentStatus.ENRICHED)
         enrichedCount++
       } catch (error) {
         console.error(`Failed to enrich scan ${scan.id}:`, error)

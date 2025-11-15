@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
               name: 'Trade Show 2024 Report',
               filters: { tiers: ['Hot', 'Warm'] },
             }),
-            validationErrors: validationResult.error.errors,
+            validationErrors: validationResult.error.issues,
           }
         )
       )
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     const storage = await getActiveStorageAdapter()
 
     // Generate the report
-    const report = await storage.generateReport(eventId, filters)
+    const report = await storage.generateReport(eventId, filters as any)
 
     // Update report name
     const updatedReport = {
@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
     // Return the generated report with ID
     return successResponse(
       {
-        id: reportId,
         ...updatedReport,
+        id: reportId,
         generatedAt: updatedReport.generatedAt.toISOString(),
       },
       'Report generated successfully'
